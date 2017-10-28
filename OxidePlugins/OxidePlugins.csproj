@@ -208,6 +208,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Autokick.cs" />
+    <Compile Include="ConnectionLimiter.cs" />
     <Compile Include="LampController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
