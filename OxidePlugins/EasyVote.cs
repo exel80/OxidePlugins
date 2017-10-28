@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Make sure that everything works (like multiple server voting)
+// Check all todos
+// Double test everything
+using System;
 using System.Collections.Generic;
 using Oxide.Core;
 using Oxide.Core.Plugins;
@@ -186,6 +189,21 @@ namespace Oxide.Plugins
 
             Chat(player, _lang("VoteList", player.UserIDString, _voteList.ToString(), voted));
             Chat(player, _lang("EarnReward", player.UserIDString));
+        }
+
+        [ChatCommand("voteadmin")]
+        void cmdVoteAdmin(BasePlayer player, string command, string[] args)
+        {
+            if (!hasPermission(player, permAdmin))
+                return;
+
+            // TODO: Add admin commands
+            // addreward <reward name (need only number)> <commands in ">
+            // removereward <reward name (need only number)>
+            // editreward <reward name (need only number)> => Show voteX rewards => /voteadmin +"asdasdasd" -"asdasd"
+            // showcmds 
+            // testapi <VoteSitesAPI (name)> <id> <key>
+            // testreward <reward name (need only number)>
         }
 
         [ChatCommand("claim")]
@@ -523,11 +541,11 @@ namespace Oxide.Plugins
                 },
                 Rewards = new Dictionary<string, List<string>>
                 {
-                    { "first", new List<string>() { "oxidegrantgroup: voter" } },
-                    { "@", new List<string>() { "supply.signal: 1" } },
-                    { "vote3", new List<string>() { "money: 100" } },
-                    { "vote6", new List<string>() { "money: 500" } },
-                    { "vote10", new List<string>() { "money: 1000", "rp: 50" } }
+                    { "first", new List<string>() { "oxidegrantperm: kits.starterkit" } },
+                    { "@", new List<string>() { "supply.signal: 1", "zlvl-*: 1" } },
+                    { "vote3", new List<string>() { "oxidegrantgroup: member" } },
+                    { "vote6", new List<string>() { "money: 500", "tempaddgroup: vip-1d1h1m" } },
+                    { "vote10", new List<string>() { "money: 1000", "rp: 50", "tempgrantperm: fauxadmin.allowed-5m" } }
                 },
                 Commands = new Dictionary<string, string>
                 {
