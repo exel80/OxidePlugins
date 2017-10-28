@@ -30,41 +30,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ApexAI">
-      <HintPath>..\..\DLL\RUST\ApexAI.dll</HintPath>
-    </Reference>
-    <Reference Include="ApexSerialization">
-      <HintPath>..\..\DLL\RUST\ApexSerialization.dll</HintPath>
-    </Reference>
-    <Reference Include="ApexShared">
-      <HintPath>..\..\DLL\RUST\ApexShared.dll</HintPath>
-    </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>..\..\DLL\RUST\Assembly-CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\DLL\RUST\Assembly-CSharp-firstpass.dll</HintPath>
-    </Reference>
-    <Reference Include="Assembly-CSharp_Original">
-      <HintPath>..\..\DLL\RUST\Assembly-CSharp_Original.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-UnityScript-firstpass">
       <HintPath>..\..\DLL\RUST\Assembly-UnityScript-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="ConvexHull">
-      <HintPath>..\..\DLL\RUST\ConvexHull.dll</HintPath>
-    </Reference>
-    <Reference Include="EasyAntiCheat.Client">
-      <HintPath>..\..\DLL\RUST\EasyAntiCheat.Client.dll</HintPath>
-    </Reference>
-    <Reference Include="EasyAntiCheat.Server">
-      <HintPath>..\..\DLL\RUST\EasyAntiCheat.Server.dll</HintPath>
-    </Reference>
     <Reference Include="Facepunch.Console">
       <HintPath>..\..\DLL\RUST\Facepunch.Console.dll</HintPath>
-    </Reference>
-    <Reference Include="Facepunch.Console_Original">
-      <HintPath>..\..\DLL\RUST\Facepunch.Console_Original.dll</HintPath>
     </Reference>
     <Reference Include="Facepunch.Input">
       <HintPath>..\..\DLL\RUST\Facepunch.Input.dll</HintPath>
@@ -78,9 +51,6 @@
     <Reference Include="Facepunch.Rcon">
       <HintPath>..\..\DLL\RUST\Facepunch.Rcon.dll</HintPath>
     </Reference>
-    <Reference Include="Facepunch.Rcon_Original">
-      <HintPath>..\..\DLL\RUST\Facepunch.Rcon_Original.dll</HintPath>
-    </Reference>
     <Reference Include="Facepunch.Steamworks">
       <HintPath>..\..\DLL\RUST\Facepunch.Steamworks.dll</HintPath>
     </Reference>
@@ -93,57 +63,8 @@
     <Reference Include="Facepunch.UnityEngine">
       <HintPath>..\..\DLL\RUST\Facepunch.UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="I18N">
-      <HintPath>..\..\DLL\RUST\I18N.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.CJK">
-      <HintPath>..\..\DLL\RUST\I18N.CJK.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.MidEast">
-      <HintPath>..\..\DLL\RUST\I18N.MidEast.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.Other">
-      <HintPath>..\..\DLL\RUST\I18N.Other.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.Rare">
-      <HintPath>..\..\DLL\RUST\I18N.Rare.dll</HintPath>
-    </Reference>
-    <Reference Include="I18N.West">
-      <HintPath>..\..\DLL\RUST\I18N.West.dll</HintPath>
-    </Reference>
-    <Reference Include="Ionic.Zip.Reduced">
-      <HintPath>..\..\DLL\RUST\Ionic.Zip.Reduced.dll</HintPath>
-    </Reference>
-    <Reference Include="LZ4">
-      <HintPath>..\..\DLL\RUST\LZ4.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Cecil">
-      <HintPath>..\..\DLL\RUST\Mono.Cecil.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Cecil.Mdb">
-      <HintPath>..\..\DLL\RUST\Mono.Cecil.Mdb.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Cecil.Pdb">
-      <HintPath>..\..\DLL\RUST\Mono.Cecil.Pdb.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Cecil.Rocks">
-      <HintPath>..\..\DLL\RUST\Mono.Cecil.Rocks.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Data.Tds">
-      <HintPath>..\..\DLL\RUST\Mono.Data.Tds.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Posix, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\DLL\RUST\Mono.Posix.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Security">
-      <HintPath>..\..\DLL\RUST\Mono.Security.dll</HintPath>
-    </Reference>
-    <Reference Include="MySql.Data">
-      <HintPath>..\..\DLL\RUST\MySql.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\DLL\RUST\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net35\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Oxide.Core">
       <HintPath>..\..\DLL\RUST\Oxide.Core.dll</HintPath>
@@ -151,23 +72,11 @@
     <Reference Include="Oxide.CSharp">
       <HintPath>..\..\DLL\RUST\Oxide.CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Oxide.MySql">
-      <HintPath>..\..\DLL\RUST\Oxide.MySql.dll</HintPath>
-    </Reference>
-    <Reference Include="Oxide.References">
-      <HintPath>..\..\DLL\RUST\Oxide.References.dll</HintPath>
-    </Reference>
     <Reference Include="Oxide.Rust">
       <HintPath>..\..\DLL\RUST\Oxide.Rust.dll</HintPath>
     </Reference>
-    <Reference Include="Oxide.SQLite">
-      <HintPath>..\..\DLL\RUST\Oxide.SQLite.dll</HintPath>
-    </Reference>
     <Reference Include="Oxide.Unity">
       <HintPath>..\..\DLL\RUST\Oxide.Unity.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net">
-      <HintPath>..\..\DLL\RUST\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="Rust.Data">
       <HintPath>..\..\DLL\RUST\Rust.Data.dll</HintPath>
@@ -190,27 +99,17 @@
     <Reference Include="UnityEngine">
       <HintPath>..\..\DLL\RUST\UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.Analytics">
-      <HintPath>..\..\DLL\RUST\UnityEngine.Analytics.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Networking">
-      <HintPath>..\..\DLL\RUST\UnityEngine.Networking.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Timeline">
-      <HintPath>..\..\DLL\RUST\UnityEngine.Timeline.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\DLL\RUST\UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="websocket-sharp">
-      <HintPath>..\..\DLL\RUST\websocket-sharp.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Autokick.cs" />
     <Compile Include="ConnectionLimiter.cs" />
+    <Compile Include="EasyVote.cs" />
     <Compile Include="LampController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
