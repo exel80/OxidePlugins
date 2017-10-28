@@ -8,13 +8,16 @@ using UnityEngine;
 using System.Linq;
 using System.Text;
 using Oxide.Core.Libraries;
+using System.Text.RegularExpressions;
 
 namespace Oxide.Plugins
 {
-    [Info("EasyVote", "Exel80", "2.0.0", ResourceId = 2102)]
+    [Info("EasyVote", "Exel80", "2.0.1", ResourceId = 2102)]
     [Description("Simple and smooth voting start by activating one scirpt.")]
     class EasyVote : RustPlugin
     {
+        [PluginReference] private Plugin DiscordMessages;
+
         #region Initializing
         // Permissions
         private const bool DEBUG = true;
@@ -32,21 +35,25 @@ namespace Oxide.Plugins
         StringBuilder _voteList = new StringBuilder();
         private List<int> numberMax = new List<int>();
 
+        void Loaded()
+        {
+            _storedData = Interface.Oxide.DataFileSystem.ReadObject<StoredData>("EasyVote");
+
+            // Check rewards and add them one big list
+            BuildNumberMax();
+        }
+
         void Init()
         {
             // Load configs
             LoadConfigValues();
             LoadDefaultMessages();
 
-            _storedData = Interface.GetMod().DataFileSystem.ReadObject<StoredData>("EasyVote");
-
             // Check available vote sites
             checkVoteSites();
 
             // Build StringBuilders
             voteList();
-
-            BuildNumberMax();
 
             // Regitering permissions
             permission.RegisterPermission(permUse, this);
@@ -63,32 +70,32 @@ namespace Oxide.Plugins
             {
                 ["ClaimError"] = "Something went wrong! Player <color=red>{0} got a error</color> from <color=yellow>{1}</color>. Please try again later!",
                 ["ClaimReward"] = "You just received your vote reward(s). Enjoy!",
-                ["ClaimPleaseWait"] = "Checking vote sites. Please wait...",
-                ["VoteList"] = "You have voted <color=yellow>{1}</color> time! Leave your vote in these sites:\n{0}",
-                ["EarnReward"] = "When you are voted. Type <color=yellow>/claim</color> to earn your reward(s)!",
+                ["ClaimPleaseWait"] = "Checking vote site(s). Please wait...",
+                ["VoteList"] = "You have voted <color=yellow>{1}</color> time(s)! Leave your vote on these sites:\n{0}",
+                ["EarnReward"] = "When you are voted, type <color=yellow>/claim</color> to earn your reward(s)!",
                 ["RewardListFirstTime"] = "<color=cyan>Reward when player vote first time.</color>",
                 ["RewardListEverytime"] = "<color=cyan>Reward what player will receive everytime when vote.</color>",
                 ["RewardList"] = "<color=cyan>Reward when player has voted</color> <color=orange>{0}</color> <color=cyan>time(s).</color>",
                 ["Received"] = "You have received {0}x {1}",
-                ["ThankYou"] = "Thank you for voting! You have voted {0} time(s)",
+                ["ThankYou"] = "Thank you for voting! You have voted {0} time(s) Here is your reward for..\n{1}",
                 ["NoRewards"] = "You do not have any new rewards available" +
                 "\n Please type <color=yellow>/vote</color> and go to the website to vote and receive your reward",
                 ["RemeberClaim"] = "You haven't yet claimed your reward from voting server! Use <color=cyan>/claim</color> to claim your reward!" +
                 "\n You have to claim your reward in <color=yellow>24h</color>! Otherwise it will be gone!",
                 ["GlobalChatAnnouncments"] = "<color=yellow>{0}</color><color=cyan> has voted </color><color=yellow>{1}</color><color=cyan> time(s) and just received their rewards. Find out where to vote by typing</color><color=yellow> /vote</color>\n<color=cyan>To see a list of avaliable rewards type</color><color=yellow> /reward list</color>",
-                ["money"] = "{0} has been desposited into your account",
-                ["rp"] = "You have gained {0} reward points",
-                ["tempaddgroup"] = "You have been temporality added to {0} group (Expire in {1})",
-                ["tempgrantperm"] = "You have temporality granted {0} permission (Expire in {1})",
-                ["zlvl-wc"] = "You have gained {0} woodcrafting level(s)",
-                ["zlvl-m"] = "You have gained {0} mining level(s)",
-                ["zlvl-s"] = "You have gained {0} skinning level(s)",
-                ["zlvl-c"] = "You have gained {0} crafting level(s)",
-                ["zlvl-*"] = "You have gained {0} in all level(s)",
-                ["oxidegrantperm"] = "You have granted {0} permission",
-                ["oxiderevokeperm"] = "You have revoked {0} permission",
-                ["oxidegrantgroup"] = "You have been added to {0} group",
-                ["oxiderevokegroup"] = "You have been removed from {0} group"
+                ["money"] = "<color=yellow>{0}$</color> has been desposited into your account",
+                ["rp"] = "You have gained <color=yellow>{0}</color> reward points",
+                ["tempaddgroup"] = "You have been temporality added to <color=yellow>{0}</color> group (Expire in {1})",
+                ["tempgrantperm"] = "You have temporality granted <color=yellow>{0}</color> permission (Expire in {1})",
+                ["zlvl-wc"] = "You have gained <color=yellow>{0}</color> woodcrafting level(s)",
+                ["zlvl-m"] = "You have gained <color=yellow>{0}</color> mining level(s)",
+                ["zlvl-s"] = "You have gained <color=yellow>{0}</color> skinning level(s)",
+                ["zlvl-c"] = "You have gained <color=yellow>{0}</color> crafting level(s)",
+                ["zlvl-*"] = "You have gained <color=yellow>{0}</color> in all level(s)",
+                ["oxidegrantperm"] = "You have granted <color=yellow>{0}</color> permission",
+                ["oxiderevokeperm"] = "You have revoked <color=yellow>{0}</color> permission",
+                ["oxidegrantgroup"] = "You have been added to <color=yellow>{0}</color> group",
+                ["oxiderevokegroup"] = "You have been removed from <color=yellow>{0}</color> group"
             }, this);
         }
         #endregion
@@ -97,12 +104,16 @@ namespace Oxide.Plugins
         [ChatCommand("vote")]
         void cmdVote(BasePlayer player, string command, string[] args)
         {
+            //TODO: add Permission check
+            RewardHandler(player, "TestServer");
+
             // Check how many time player has voted.
             int voted = 0;
             if (_storedData.Players.ContainsKey(player.UserIDString))
                 voted = _storedData.Players[player.UserIDString].voted;
 
             Chat(player, _lang("VoteList", player.UserIDString, _voteList.ToString(), voted));
+            Chat(player, _lang("EarnReward", player.UserIDString));
         }
 
         [ChatCommand("claim")]
@@ -135,7 +146,7 @@ namespace Oxide.Plugins
                                     string _format = String.Format(SitesApi.Value, idKeySplit[1], player.userID);
 
                                     // Send GET request to voteAPI site.
-                                    webrequest.Enqueue(_format, null, (code, response) => ClaimReward(code, response, player, site), this, RequestMethod.GET, null, timeout);
+                                    webrequest.Enqueue(_format, null, (code, response) => ClaimReward(code, response, player, site, kvp.Key), this, RequestMethod.GET, null, timeout);
 
                                     _Debug($"GET: {_format} =>\n Site: {site} Server: {kvp.Key} Id: {idKeySplit[0]}");
                                 }
@@ -173,28 +184,36 @@ namespace Oxide.Plugins
         #endregion
 
         #region Reward Handler
-        private void RewardHandler(BasePlayer player)
+        private void RewardHandler(BasePlayer player, string serverName = null)
         {
-            var info = new PlayerData(player);
+            // List received reward(s) one big list.
+            StringBuilder rewards = new StringBuilder();
 
             // Check that player is in "database".
-            if (!_storedData.Players.ContainsKey(info.id))
+            var playerData = new PlayerData();
+            if (!_storedData.Players.ContainsKey(player.UserIDString))
             {
-                _storedData.Players.Add(info.id, info);
+                _storedData.Players.Add(player.UserIDString, playerData);
+                _storedData.Players[player.UserIDString].lastTime_Voted = DateTime.UtcNow;
                 Interface.GetMod().DataFileSystem.WriteObject("EasyVote", _storedData);
             }
 
             // Add +1 vote to player.
-            _storedData.Players[info.id].voted++;
+            _storedData.Players[player.UserIDString].voted++;
             Interface.GetMod().DataFileSystem.WriteObject("EasyVote", _storedData);
 
             // Get how many time player has voted.
-            int voted = _storedData.Players[info.id].voted;
+            int voted = _storedData.Players[player.UserIDString].voted;
 
             // Take closest number from rewardNumbers
-            int? closest = (int?)numberMax.Aggregate((x, y) => Math.Abs(x - voted) < Math.Abs(y - voted)
-                    ? (x > voted ? y : x)
-                    : (y > voted ? x : y));
+            int? closest = null;
+            try
+            {
+                closest = (int?)numberMax.Aggregate((x, y) => Math.Abs(x - voted) < Math.Abs(y - voted)
+                        ? (x > voted ? y : x)
+                        : (y > voted ? x : y));
+            }
+            catch (InvalidOperationException error) { PrintError($"Player {player.displayName} tried to claim a reward but this happened ...\n{error.ToString()}"); return; }
 
             if (closest > voted)
             {
@@ -205,12 +224,11 @@ namespace Oxide.Plugins
 
             _Debug($"Reward Number: {closest} Voted: {voted}");
 
-            // and here the magic happens.
+            // and here the magic happens. Loop for all rewards.
             foreach (KeyValuePair<string, List<string>> kvp in _config.Rewards)
             {
                 if (closest != 0)
                 {
-                    // Loop for all rewards.
                     if (kvp.Key.ToLower() == "first")
                     {
                         _Debug("Founded 'first' in config!");
@@ -218,16 +236,16 @@ namespace Oxide.Plugins
                         //TODO: Check that player vote first time & gave first time rewwrd.
                     }
 
-                    if (kvp.Key == "@" | kvp.Key == "*")
+                    if (kvp.Key == "@")
                     {
                         _Debug("Founded 'repeat reward' in config!");
 
                         //TODO: Gave this reward to the player everytime.
                     }
 
+                    // TODO: Cumlative reward
                     if (kvp.Key.ToString() == $"vote{closest}")
                     {
-                        Chat(player, $"{_lang("ThankYou", player.UserIDString, voted)}");
                         foreach (string reward in kvp.Value)
                         {
                             // Split reward to variable and value.
@@ -243,11 +261,11 @@ namespace Oxide.Plugins
                                 rust.RunServerCommand(getCmdLine(player, commmand, value));
 
                                 if (!value.Contains("-"))
-                                    Chat(player, $"{_lang(commmand, player.UserIDString, value)}");
+                                    rewards.Append($"- {_lang(commmand, player.UserIDString, value)}").AppendLine();
                                 else
                                 {
                                     string[] _value = value.Split('-');
-                                    Chat(player, $"{_lang(commmand, player.UserIDString, _value[0], _value[1])}");
+                                    rewards.Append($"- {_lang(commmand, player.UserIDString, _value[0], _value[1])}").AppendLine();
                                 }
 
                                 _Debug($"Ran command {String.Format(commmand, value)}");
@@ -264,7 +282,7 @@ namespace Oxide.Plugins
                                     if (!player.inventory.GiveItem(itemToReceive, player.inventory.containerMain))
                                         itemToReceive.Drop(player.GetDropPosition(), player.GetDropVelocity());
 
-                                    Chat(player, $"{_lang("Received", player.UserIDString, value, itemToReceive.info.displayName.translated)}");
+                                    rewards.Append($"- {_lang("Received", player.UserIDString, value, itemToReceive.info.displayName.translated)}").AppendLine();
                                 }
                                 catch (Exception e) { PrintWarning($"{e}"); }
                             }
@@ -273,7 +291,30 @@ namespace Oxide.Plugins
                 }
             }
             if (_config.Settings[PluginSettings.GlobalChatAnnouncments]?.ToLower() == "true")
-                PrintToChat($"{_lang("GlobalClaimAnnouncment", player.UserIDString, player.displayName, voted)}");
+                PrintToChat($"{_lang("GlobalChatAnnouncments", player.UserIDString, player.displayName, voted)}");
+
+            // Send message to discord text channel.
+            if (_config.Discord[PluginSettings.DiscordEnabled].ToLower() == "true")
+            {
+                List<Fields> fields = new List<Fields>();
+                string json;
+
+                fields.Add(new Fields("Voter", $"[{player.displayName}](https://steamcommunity.com/profiles/{player.userID})", true));
+                fields.Add(new Fields("Voted", voted.ToString(), true));
+                fields.Add(new Fields("Server", (serverName != null ? serverName : "[ UNKNOWN ]"), true));
+                fields.Add(new Fields("Reward(s)", CleanHTML(rewards.ToString()), false));
+
+                json = JsonConvert.SerializeObject(fields);
+                DiscordMessages?.Call("API_SendFancyMessage", _config.Discord[PluginSettings.WebhookURL], _config.Discord[PluginSettings.Title], 0, json);
+
+                // Send @here in channel, if alert is true.
+                if (_config.Discord[PluginSettings.Alert].ToLower() == "true")
+                    DiscordMessages?.Call("API_SendTextMessage", _config.Discord[PluginSettings.WebhookURL], "@here");
+            }
+
+            // Make sure that player has voted etc.
+            if (rewards.Length > 1)
+                Chat(player, $"{_lang("ThankYou", player.UserIDString, voted, rewards.ToString())}");
         }
         private string getCmdLine(BasePlayer player, string str, string value)
         {
@@ -308,21 +349,20 @@ namespace Oxide.Plugins
         }
         class PlayerData
         {
-            public string id;
             public int voted;
             public DateTime lastTime_Voted;
 
-            public PlayerData(BasePlayer player)
+            public PlayerData()
             {
-                id = player.UserIDString;
                 voted = 0;
+                lastTime_Voted = DateTime.UtcNow;
             }
         }
         StoredData _storedData;
         #endregion
 
         #region Webrequests
-        void ClaimReward(int code, string response, BasePlayer player, string url)
+        void ClaimReward(int code, string response, BasePlayer player, string url, string serverName = null)
         {
             _Debug($"Code: {code}, Response: {response}");
 
@@ -337,7 +377,7 @@ namespace Oxide.Plugins
             {
                 case "1":
                     {
-                        RewardHandler(player);
+                        RewardHandler(player, serverName);
                         if (claimCooldown.ContainsKey(player.userID))
                             claimCooldown[player.userID] = true;
                     }
@@ -364,9 +404,6 @@ namespace Oxide.Plugins
                 Settings = new Dictionary<string, string>
                 {
                     { PluginSettings.Prefix, "<color=cyan>[EasyVote]</color>" },
-                    { PluginSettings.AllowManualCheckReward, "true" },
-                    { PluginSettings.AllowAutoRewardCheck, "true" },
-                    { PluginSettings.RewardCheckTime, "60" },
                     { PluginSettings.RewardIsCumulative, "false" },
                     { PluginSettings.GlobalChatAnnouncments, "true" },
                     { PluginSettings.LocalChatAnnouncments, "true" }
@@ -374,6 +411,7 @@ namespace Oxide.Plugins
                 Discord = new Dictionary<string, string>
                 {
                     { PluginSettings.DiscordEnabled, "false" },
+                    { PluginSettings.Alert, "false" },
                     { PluginSettings.Title, "Vote" },
                     { PluginSettings.WebhookURL, "" }
                 },
@@ -441,10 +479,8 @@ namespace Oxide.Plugins
             public const string Title = "Title";
             public const string WebhookURL = "Discord webhook (URL)";
             public const string DiscordEnabled = "DiscordMessage Enabled (true / false)";
+            public const string Alert = "Enable @here alert (true / false)";
             public const string Prefix = "Prefix";
-            public const string AllowManualCheckReward = "Allow player claim reward manually with command (true / false)";
-            public const string AllowAutoRewardCheck = "Timer : Check online players if someone has voted (true / false)";
-            public const string RewardCheckTime = "Timer : How often timer check online players (seconds)";
             public const string RewardIsCumulative = "Vote rewards cumulative (true / false)";
             public const string GlobalChatAnnouncments = "Globally announcment in chat when player voted (true / false)";
             public const string LocalChatAnnouncments = "Send thank you message to player who voted (true / false)";
@@ -497,6 +533,24 @@ namespace Oxide.Plugins
         {
             if (DEBUG)
                 Puts($"[Debug] {msg}");
+        }
+
+        private string CleanHTML(string input)
+        {
+            return Regex.Replace(input, @"<(.|\n)*?>", string.Empty);
+        }
+
+        public class Fields
+        {
+            public string name { get; set; }
+            public string value { get; set; }
+            public bool inline { get; set; }
+            public Fields(string name, string value, bool inline)
+            {
+                this.name = name;
+                this.value = value;
+                this.inline = inline;
+            }
         }
 
         private void rewardList(BasePlayer player)
@@ -573,8 +627,10 @@ namespace Oxide.Plugins
         {
             foreach (KeyValuePair<string, List<string>> kvp in _config.Rewards)
             {
-                if (kvp.Key == "*" | kvp.Key == "@" | kvp.Key.ToLower() == "first")
-                    return;
+                if (kvp.Key == "@")
+                    continue;
+                if (kvp.Key.ToLower() == "first")
+                    continue;
 
                 int rewardNumber;
 
@@ -585,6 +641,7 @@ namespace Oxide.Plugins
                     continue;
                 }
 
+                _Debug(""+rewardNumber);
                 numberMax.Add(rewardNumber);
             }
         }
@@ -642,7 +699,7 @@ namespace Oxide.Plugins
                     {
                         pass = false;
                         PrintWarning($"In '{kvp.Key}' value '{vp.Key}' is null (oxide/config/EasyVote.json). Disabled: {kvp.Key}");
-                        return;
+                        continue;
                     }
                 }
 
