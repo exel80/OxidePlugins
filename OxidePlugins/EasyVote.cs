@@ -26,6 +26,7 @@ namespace Oxide.Plugins
 
         // Spam protect list
         Dictionary<ulong, bool> claimCooldown = new Dictionary<ulong, bool>();
+        Dictionary<ulong, bool> checkCooldown = new Dictionary<ulong, bool>();
 
         // Global bools
         private bool NoReward = true;
@@ -33,6 +34,7 @@ namespace Oxide.Plugins
         // List all vote sites.
         List<string> availableAPISites = new List<string>();
         StringBuilder _voteList = new StringBuilder();
+        StringBuilder helpYou = new StringBuilder();
         private List<int> numberMax = new List<int>();
 
         void Loaded()
@@ -41,6 +43,9 @@ namespace Oxide.Plugins
 
             // Check rewards and add them one big list
             BuildNumberMax();
+
+            // Build helptext
+            HelpText();
         }
 
         void Init()
@@ -68,21 +73,19 @@ namespace Oxide.Plugins
         {
             lang.RegisterMessages(new Dictionary<string, string>
             {
-                ["ClaimError"] = "Something went wrong! Player <color=red>{0} got a error</color> from <color=yellow>{1}</color>. Please try again later!",
+                ["ClaimError"] = "Something went wrong! Player <color=red>{0} got an error</color> from <color=yellow>{1}</color>. Please try again later!",
                 ["ClaimReward"] = "You just received your vote reward(s). Enjoy!",
-                ["ClaimPleaseWait"] = "Checking vote site(s). Please wait...",
-                ["VoteList"] = "You have voted <color=yellow>{1}</color> time(s)! Leave your vote on these sites:\n{0}",
-                ["EarnReward"] = "When you are voted, type <color=yellow>/claim</color> to earn your reward(s)!",
-                ["RewardListFirstTime"] = "<color=cyan>Reward when player vote first time.</color>",
-                ["RewardListEverytime"] = "<color=cyan>Reward what player will receive everytime when vote.</color>",
-                ["RewardList"] = "<color=cyan>Reward when player has voted</color> <color=orange>{0}</color> <color=cyan>time(s).</color>",
+                ["ClaimPleaseWait"] = "Checking the voting websites. Please wait...",
+                ["VoteList"] = "You have voted <color=yellow>{1}</color> time(s)!\n Leave another vote on these websites:\n{0}",
+                ["EarnReward"] = "When you have voted, type <color=yellow>/claim</color> to claim your reward(s)!",
+                ["RewardListFirstTime"] = "<color=cyan>Reward for voting for the first time.</color>",
+                ["RewardListEverytime"] = "<color=cyan>Reward, which player will receive everytime they vote.</color>",
+                ["RewardList"] = "<color=cyan>Reward for voting</color> <color=orange>{0}</color> <color=cyan>time(s).</color>",
                 ["Received"] = "You have received {0}x {1}",
                 ["ThankYou"] = "Thank you for voting! You have voted {0} time(s) Here is your reward for..\n{1}",
-                ["NoRewards"] = "You do not have any new rewards available" +
-                "\n Please type <color=yellow>/vote</color> and go to the website to vote and receive your reward",
-                ["RemeberClaim"] = "You haven't yet claimed your reward from voting server! Use <color=cyan>/claim</color> to claim your reward!" +
-                "\n You have to claim your reward in <color=yellow>24h</color>! Otherwise it will be gone!",
-                ["GlobalChatAnnouncments"] = "<color=yellow>{0}</color><color=cyan> has voted </color><color=yellow>{1}</color><color=cyan> time(s) and just received their rewards. Find out where to vote by typing</color><color=yellow> /vote</color>\n<color=cyan>To see a list of avaliable rewards type</color><color=yellow> /reward list</color>",
+                ["NoRewards"] = "You do not have any new rewards available\n Please type <color=yellow>/vote</color> and go to one of the websites to vote and receive your reward",
+                ["RemeberClaim"] = "You haven't claimed your reward from voting for the server yet! Use <color=yellow>/claim</color> to claim your reward!\n You have to claim your reward within <color=yellow>24h</color>! Otherwise it will be gone!",
+                ["GlobalChatAnnouncments"] = "<color=yellow>{0}</color><color=cyan> has voted </color><color=yellow>{1}</color><color=cyan> time(s) and just received their rewards. Find out where you can vote by typing</color><color=yellow> /vote</color>\n<color=cyan>To see a list of avaliable rewards type</color><color=yellow> /reward list</color>",
                 ["money"] = "<color=yellow>{0}$</color> has been desposited into your account",
                 ["rp"] = "You have gained <color=yellow>{0}</color> reward points",
                 ["tempaddgroup"] = "You have been temporality added to <color=yellow>{0}</color> group (Expire in {1})",
@@ -92,11 +95,80 @@ namespace Oxide.Plugins
                 ["zlvl-s"] = "You have gained <color=yellow>{0}</color> skinning level(s)",
                 ["zlvl-c"] = "You have gained <color=yellow>{0}</color> crafting level(s)",
                 ["zlvl-*"] = "You have gained <color=yellow>{0}</color> in all level(s)",
-                ["oxidegrantperm"] = "You have granted <color=yellow>{0}</color> permission",
-                ["oxiderevokeperm"] = "You have revoked <color=yellow>{0}</color> permission",
+                ["oxidegrantperm"] = "You have been granted <color=yellow>{0}</color> permission",
+                ["oxiderevokeperm"] = "Your permission <color=yellow>{0}</color> has been revoked",
                 ["oxidegrantgroup"] = "You have been added to <color=yellow>{0}</color> group",
                 ["oxiderevokegroup"] = "You have been removed from <color=yellow>{0}</color> group"
             }, this);
+        }
+        #endregion
+
+        #region Hooks
+        void OnPlayerDisconnected(BasePlayer player, string reason)
+        {
+            // If (for some reason) player is stuck in claimCooldown list.
+            if (claimCooldown.ContainsKey(player.userID))
+                claimCooldown.Remove(player.userID);
+        }
+
+        private void SendHelpText(BasePlayer player)
+        {
+            if (hasPermission(player, permUse))
+                player.ChatMessage(helpYou.ToString());
+        }
+
+        void OnPlayerSleepEnded(BasePlayer player)
+        {
+            if (!hasPermission(player, permUse))
+                return;
+
+            // Check if player exist in cooldown list or not
+            if (!checkCooldown.ContainsKey(player.userID))
+                checkCooldown.Add(player.userID, false);
+            else if (checkCooldown.ContainsKey(player.userID))
+                return;
+
+            var timeout = 5500f; // Timeout (in milliseconds)
+
+            foreach (var site in availableAPISites.ToList())
+            {
+                foreach (KeyValuePair<string, Dictionary<string, string>> kvp in _config.Servers)
+                {
+                    foreach (KeyValuePair<string, string> vp in kvp.Value)
+                    {
+                        if (vp.Key == site)
+                        {
+                            string[] idKeySplit = vp.Value.Split(':');
+                            foreach (KeyValuePair<string, string> SitesApi in _config.VoteSitesAPI[site])
+                            {
+                                if (SitesApi.Key == PluginSettings.apiClaim)
+                                {
+                                    // Formating api claim => {0} = Key & {1} Id
+                                    // Example: "http://rust-servers.net/api/?object=votes&element=claim&key= {0} &steamid= {1} ",
+                                    string _format = String.Format(SitesApi.Value, idKeySplit[1], player.userID);
+
+                                    // Send GET request to voteAPI site.
+                                    webrequest.Enqueue(_format, null, (code, response) => CheckStatus(code, response, player), this, RequestMethod.GET, null, timeout);
+
+                                    _Debug($"GET: {_format} =>\n Site: {site} Server: {kvp.Key} Id: {idKeySplit[0]}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Wait 3.69 sec before execute this command.
+            // Because need make sure that plugin webrequest all api sites.
+            timer.Once(3.69f, () =>
+            {
+                if (checkCooldown[player.userID])
+                {
+                    Chat(player, $"{_lang("RemeberClaim", player.UserIDString)}");
+                }
+
+                // Remove player from cooldown list
+                checkCooldown.Remove(player.userID);
+            });
         }
         #endregion
 
@@ -104,8 +176,8 @@ namespace Oxide.Plugins
         [ChatCommand("vote")]
         void cmdVote(BasePlayer player, string command, string[] args)
         {
-            //TODO: add Permission check
-            RewardHandler(player, "TestServer");
+            if (!hasPermission(player, permUse))
+                return;
 
             // Check how many time player has voted.
             int voted = 0;
@@ -119,6 +191,9 @@ namespace Oxide.Plugins
         [ChatCommand("claim")]
         void cmdClaim(BasePlayer player, string command, string[] args)
         {
+            if (!hasPermission(player, permUse))
+                return;
+
             // Check if player exist in cooldown list or not
             if (!claimCooldown.ContainsKey(player.userID))
                 claimCooldown.Add(player.userID, false);
@@ -173,6 +248,9 @@ namespace Oxide.Plugins
         [ChatCommand("reward")]
         void cmdReward(BasePlayer player, string command, string[] args)
         {
+            if (!hasPermission(player, permUse))
+                return;
+
             if (args?.Length > 1)
                 return;
 
@@ -390,7 +468,13 @@ namespace Oxide.Plugins
             _Debug($"Code: {code}, Response: {response}");
 
             if (response?.ToString() == "1" && code == 200)
-                Chat(player, _lang("RemeberClaim", player.UserIDString));
+            {
+                if (!checkCooldown.ContainsKey(player.userID))
+                {
+                    checkCooldown.Add(player.userID, true);
+                }
+                checkCooldown[player.userID] = true;
+            }
         }
         #endregion
 
@@ -535,9 +619,24 @@ namespace Oxide.Plugins
                 Puts($"[Debug] {msg}");
         }
 
+        private void HelpText()
+        {
+            helpYou.Append("<color=cyan>EasyVote Commands ::</color>").AppendLine();
+            helpYou.Append("<color=yellow>/vote</color> - Show the voting website(s)").AppendLine();
+            helpYou.Append("<color=yellow>/claim</color> - Claim vote reward(s)").AppendLine();
+            helpYou.Append("<color=yellow>/reward list</color> - Display all reward(s) what you can get from voting.");
+        }
+
         private string CleanHTML(string input)
         {
             return Regex.Replace(input, @"<(.|\n)*?>", string.Empty);
+        }
+
+        private bool hasPermission(BasePlayer player, string perm)
+        {
+            if (player.IsAdmin) return true;
+            if (permission.UserHasPermission(player.UserIDString, perm)) return true;
+            return false;
         }
 
         public class Fields
@@ -640,8 +739,6 @@ namespace Oxide.Plugins
                     Puts($"Invalid vote config format \"{kvp.Key}\"");
                     continue;
                 }
-
-                _Debug(""+rewardNumber);
                 numberMax.Add(rewardNumber);
             }
         }
