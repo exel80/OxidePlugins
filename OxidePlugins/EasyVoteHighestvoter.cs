@@ -131,11 +131,17 @@ namespace Oxide.Plugins
                     }
                 }
 
+                // TRIGGERED!
                 triggered = true;
+
                 // Congrats msg <3
                 Congrats(player.displayName, player.UserIDString);
+
+                // Reset
+                EasyVote?.Call("resetData");
             }
 
+            // Triggered?
             if (!triggered)
                 Announce();
         }
