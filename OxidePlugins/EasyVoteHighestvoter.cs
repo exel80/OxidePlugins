@@ -20,6 +20,62 @@ namespace Oxide.Plugins
         // Just make sure im no using other name...
         private const string StoredDataName = "HighestVoter";
 
+        #region Hooks
+        void onUserReceiveHighestVoterReward(Dictionary<string, string> RewardData)
+        {
+            // Convert to bool
+            bool ReceivedReward = RewardData["ReceivedReward"] == "true";
+
+            // Logging data to oxide/logs/EasyVoteHighestvoter
+            if (config.logEnabled)
+            {
+                switch (RewardData["RewardType"])
+                {
+                    case "item":
+                        {
+                            LogToFile("Highestvoter",
+                                $"[{DateTime.UtcNow.ToString()}] [HighestPlayer: {RewardData["HighestPlayerName"]} Id: {RewardData["HighestPlayerID"]}] " +
+                                $"Voter received his reward item(s) => {RewardData["Reward"]}", this);
+                        }
+                        break;
+                    default:
+                    case "group":
+                        {
+                            // New
+                            LogToFile("Highestvoter",
+                                $"[{DateTime.UtcNow.ToString()}] [HighestPlayer: {RewardData["HighestPlayerName"]} Id: {RewardData["HighestPlayerID"]}] " +
+                                $"Voter has been added to his reward group => {RewardData["Reward"]}", this);
+                            // Old
+                            if (!string.IsNullOrEmpty(RewardData["OldHighestPlayerID"]))
+                            {
+                                LogToFile("Highestvoter",
+                                $"[{DateTime.UtcNow.ToString()}] [OldHighestPlayerID: {RewardData["OldHighestPlayerID"]}] " +
+                                $"Removed from his reward group => {RewardData["Reward"]}", this);
+                            }
+                        }
+                        break;
+                }
+            }
+
+            // Mark that player received his reward
+            _storedData.hasReceivedReward = ReceivedReward;
+            Interface.GetMod().DataFileSystem.WriteObject(StoredDataName, _storedData);
+        }
+
+        void OnPlayerSleepEnded(BasePlayer player)
+        {
+            // If Highest voter havent received reward.
+            if (_storedData.hasReceivedReward != true)
+            {
+                // If match happen
+                if (player.UserIDString == _storedData.highestVoterID)
+                {
+                    GaveRewards(player.UserIDString);
+                }
+            }
+        }
+        #endregion
+
         #region Initializing
         void Init()
         {
@@ -39,103 +95,23 @@ namespace Oxide.Plugins
             // If month doesnt match
             if (_storedData.Month != DateTime.UtcNow.Month)
             {
-                // EasyVote tell current highest and check last month highest.
                 string HighestPlayer = EasyVote?.Call("getHighestvoter").ToString();
-                string OldHighestPlayer = _storedData.highestVoterID;
 
-                // Change this month highestID
-                _storedData.highestVoterID = HighestPlayer;
-                _storedData.Month = DateTime.UtcNow.Month;
-                Interface.GetMod().DataFileSystem.WriteObject(StoredDataName, _storedData);
-
-                // Try found player
-                BasePlayer player = FindPlayer(HighestPlayer).FirstOrDefault();
-
-                // If make sure that player isnt null <3
-                if (player != null)
+                if (string.IsNullOrEmpty(HighestPlayer))
                 {
-                    // Item reward
-                    if (config.rewardIs.ToLower() == "item")
-                    {
-                        // Check if multiple items
-                        if (config.item.Contains(','))
-                        {
-                            string[] RawItems = config.item.Trim().Split(',');
-                            for (int i = 0; i < RawItems.Count(); i++)
-                            {
-                                string[] Items = RawItems[i].Split(':');
+                    PrintWarning("HighestPlayer is NULL !!! No one have voted your server past month, updated month number.");
 
-                                string weapon = Items[0];
-                                int amount = Convert.ToInt32(Items[1]);
-
-                                try
-                                {
-                                    Item itemToReceive = ItemManager.CreateByName(weapon, amount);
-
-                                    if (config.logEnabled)
-                                        LogToFile("Highestvoter", $"Highest voter received item => {amount}x {itemToReceive.info.displayName.translated}", this);
-
-                                    //If the item does not end up in the inventory
-                                    //Drop it on the ground for them
-                                    if (!player.inventory.GiveItem(itemToReceive, player.inventory.containerMain))
-                                        itemToReceive.Drop(player.GetDropPosition(), player.GetDropVelocity());
-                                }
-                                catch (Exception e) { PrintWarning($"{e}"); }
-                            }
-                        }
-                        else
-                        {
-                            string[] Item = config.item.Split(':');
-
-                            string weapon = Item[0];
-                            int amount = Convert.ToInt32(Item[1]);
-
-                            try
-                            {
-                                Item itemToReceive = ItemManager.CreateByName(weapon, amount);
-
-                                if (config.logEnabled)
-                                    LogToFile("Highestvoter", $"Highest voter received item => {amount}x {itemToReceive.info.displayName.translated}", this);
-
-                                //If the item does not end up in the inventory
-                                //Drop it on the ground for them
-                                if (!player.inventory.GiveItem(itemToReceive, player.inventory.containerMain))
-                                    itemToReceive.Drop(player.GetDropPosition(), player.GetDropVelocity());
-                            }
-                            catch (Exception e) { PrintWarning($"{e}"); }
-                        }
-                    }
-                    // Group reward
-                    else
-                    {
-                        // Execute console command
-                        rust.RunServerCommand($"oxide.usergroup add {HighestPlayer} {config.group}");
-                        rust.RunServerCommand($"oxide.usergroup remove {OldHighestPlayer} {config.group}");
-                    }
-
-                    // Mark that player received his reward
-                    _storedData.hasReceivedReward = true;
+                    _storedData.Month = DateTime.UtcNow.Month;
                     Interface.GetMod().DataFileSystem.WriteObject(StoredDataName, _storedData);
-                }
-                else
-                {
-                    if (config.rewardIs.ToLower() == "group")
-                    {
-                        // Execute console command
-                        rust.RunServerCommand($"oxide.usergroup add {HighestPlayer} {config.group}");
-                        rust.RunServerCommand($"oxide.usergroup remove {OldHighestPlayer} {config.group}");
 
-                        // Mark that player received his reward
-                        _storedData.hasReceivedReward = true;
-                        Interface.GetMod().DataFileSystem.WriteObject(StoredDataName, _storedData);
-                    }
+                    return;
                 }
 
                 // TRIGGERED!
                 triggered = true;
 
-                // Congrats msg <3
-                Congrats(player.displayName, player.UserIDString);
+                // Gave reward + Hook
+                GaveRewards(HighestPlayer);
 
                 // Reset
                 EasyVote?.Call("resetData");
@@ -183,7 +159,7 @@ namespace Oxide.Plugins
 
         public class Configuration
         {
-            [JsonProperty(PropertyName = "Enable logging, save to oxide/log (true / false)")]
+            [JsonProperty(PropertyName = "Enable logging, save to oxide/logs/EasyVoteHighestvoter (true / false)")]
             public bool logEnabled;
 
             [JsonProperty(PropertyName = "Interval timer (seconds)")]
@@ -232,10 +208,141 @@ namespace Oxide.Plugins
         #endregion
 
         #region Helper 
+        private void GaveRewards(string HighestPlayer)
+        {
+            // For callhooks
+            Dictionary<string, string> RewardData = new Dictionary<string, string>();
+            RewardData.Add("HighestPlayerName", string.Empty);
+            RewardData.Add("HighestPlayerID", HighestPlayer);
+
+            // Check last month highest.
+            string OldHighestPlayer = _storedData.highestVoterID;
+
+            // Change this month highestID
+            _storedData.highestVoterID = HighestPlayer;
+            _storedData.Month = DateTime.UtcNow.Month;
+            Interface.GetMod().DataFileSystem.WriteObject(StoredDataName, _storedData);
+
+            // For callhooks
+            RewardData.Add("OldHighestPlayerID", OldHighestPlayer);
+            RewardData.Add("RewardType", (config.rewardIs.ToLower() != "item" ? "group" : "item"));
+            RewardData.Add("Reward", string.Empty);
+            RewardData.Add("ReceivedReward", "false");
+
+            // Try found player
+            BasePlayer player = FindPlayer(HighestPlayer).FirstOrDefault();
+
+            // If make sure that player isnt null <3
+            if (player != null)
+            {
+                // Added for callhooks
+                RewardData["HighestPlayerName"] = player.displayName;
+
+                // Item reward
+                if (config.rewardIs.ToLower() == "item")
+                {
+                    // Also make sure player is connected.
+                    if (player.IsConnected)
+                    {
+                        // Check if multiple items
+                        if (config.item.Contains(','))
+                        {
+                            StringBuilder tempItems = new StringBuilder();
+                            string[] RawItems = config.item.Replace(" ", "").Split(',');
+                            for (int i = 0; i < RawItems.Count(); i++)
+                            {
+                                string[] Items = RawItems[i].Split(':');
+
+                                string weapon = Items[0];
+                                int amount = Convert.ToInt32(Items[1]);
+
+                                try
+                                {
+                                    Item itemToReceive = ItemManager.CreateByName(weapon, amount);
+
+                                    tempItems.Append($"{amount}x {itemToReceive.info.displayName.translated}, ");
+
+                                    RewardData["ReceivedReward"] = "true";
+
+                                    //If the item does not end up in the inventory
+                                    //Drop it on the ground for them
+                                    if (!player.inventory.GiveItem(itemToReceive, player.inventory.containerMain))
+                                        itemToReceive.Drop(player.GetDropPosition(), player.GetDropVelocity());
+                                }
+                                catch (Exception e) { PrintWarning($"{e}"); }
+                            }
+                            RewardData["Reward"] = tempItems.ToString().Substring(0, tempItems.Length - 2);
+                        }
+                        else
+                        {
+                            string[] Item = config.item.Split(':');
+
+                            string weapon = Item[0];
+                            int amount = Convert.ToInt32(Item[1]);
+
+                            try
+                            {
+                                Item itemToReceive = ItemManager.CreateByName(weapon, amount);
+
+                                RewardData["Reward"] = $"{amount}x {itemToReceive.info.displayName.translated}";
+
+                                RewardData["ReceivedReward"] = "true";
+
+                                //If the item does not end up in the inventory
+                                //Drop it on the ground for them
+                                if (!player.inventory.GiveItem(itemToReceive, player.inventory.containerMain))
+                                    itemToReceive.Drop(player.GetDropPosition(), player.GetDropVelocity());
+                            }
+                            catch (Exception e) { PrintWarning($"{e}"); }
+                        }
+                    }
+                }
+                // Group reward
+                else if (config.rewardIs.ToLower() == "group")
+                {
+                    // Execute console command
+                    rust.RunServerCommand($"oxide.usergroup add {HighestPlayer} {config.group}");
+
+                    RewardData["Reward"] = config.group;
+
+                    RewardData["ReceivedReward"] = "true";
+
+                    if (!string.IsNullOrEmpty(OldHighestPlayer))
+                        rust.RunServerCommand($"oxide.usergroup remove {OldHighestPlayer} {config.group}");
+                }
+                else
+                    PrintWarning($"{config.rewardIs.ToLower()} cant be detected. Please, use \"group\" or \"item\" only!");
+
+                // Congrats msg <3
+                Congrats(player.displayName, player.UserIDString);
+            }
+            // Group reward
+            else if (config.rewardIs.ToLower() == "group")
+            {
+                // Execute console command
+                rust.RunServerCommand($"oxide.usergroup add {HighestPlayer} {config.group}");
+
+                RewardData["Reward"] = config.group;
+
+                RewardData["ReceivedReward"] = "true";
+
+                // Congrats msg <3
+                Congrats(HighestPlayer);
+
+                if (!string.IsNullOrEmpty(OldHighestPlayer))
+                    rust.RunServerCommand($"oxide.usergroup remove {OldHighestPlayer} {config.group}");
+            }
+            else
+                PrintWarning($"{config.rewardIs.ToLower()} cant be detected. Please, use \"group\" or \"item\" only!");
+
+            // Hook => void onUserReceiveHighestVoterReward(Dictionary<string, string> RewardData)
+            Interface.CallHook("onUserReceiveHighestVoterReward", RewardData);
+        }
+
         private void Announce()
         {
             if (config.rewardIs.ToLower() == "item")
-                PrintToChat(_lang("HighestItems", null, $"\"{config.item.Trim().Replace(",", ", ")}\""));
+                PrintToChat(_lang("HighestItems", null, $"\"{config.item.Replace(",", ", ")}\""));
             else
                 PrintToChat(_lang("HighestGroup", null, config.group));
         }
@@ -271,6 +378,5 @@ namespace Oxide.Plugins
             return players;
         }
         #endregion
-
     }
 }

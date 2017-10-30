@@ -901,7 +901,7 @@ namespace Oxide.Plugins
 
         private void resetData(bool backup = true)
         {
-            string currentTime = DateTime.UtcNow.ToString("MM/yyyy");
+            string currentTime = DateTime.UtcNow.ToString("dd-MM-yyyy");
 
             // Backup
             if (backup)
