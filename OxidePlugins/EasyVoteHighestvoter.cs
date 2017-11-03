@@ -21,10 +21,10 @@ namespace Oxide.Plugins
         private const string StoredDataName = "HighestVoter";
 
         #region Hooks
-        void onUserReceiveHighestVoterReward(Dictionary<string, string> RewardData)
+        void onUserReceiveHighestVoterReward(Dictionary<string, object> RewardData)
         {
             // Convert to bool
-            bool ReceivedReward = RewardData["ReceivedReward"] == "true";
+            bool ReceivedReward = Convert.ToBoolean(RewardData["ReceivedReward"]);
 
             // Logging data to oxide/logs/EasyVoteHighestvoter
             if (config.logEnabled)
@@ -46,7 +46,7 @@ namespace Oxide.Plugins
                                 $"[{DateTime.UtcNow.ToString()}] [HighestPlayer: {RewardData["HighestPlayerName"]} Id: {RewardData["HighestPlayerID"]}] " +
                                 $"Voter has been added to his reward group => {RewardData["Reward"]}", this);
                             // Old
-                            if (!string.IsNullOrEmpty(RewardData["OldHighestPlayerID"]))
+                            if (!string.IsNullOrEmpty(RewardData["OldHighestPlayerID"].ToString()))
                             {
                                 LogToFile("Highestvoter",
                                 $"[{DateTime.UtcNow.ToString()}] [OldHighestPlayerID: {RewardData["OldHighestPlayerID"]}] " +
@@ -126,7 +126,7 @@ namespace Oxide.Plugins
         #region Localization
         string _lang(string key, string id = null, params object[] args) => string.Format(lang.GetMessage(key, this, id), args);
 
-        void LoadDefaultMessages()
+        protected void LoadDefaultMessages()
         {
             lang.RegisterMessages(new Dictionary<string, string>
             {
@@ -211,7 +211,7 @@ namespace Oxide.Plugins
         private void GaveRewards(string HighestPlayer)
         {
             // For callhooks
-            Dictionary<string, string> RewardData = new Dictionary<string, string>();
+            Dictionary<string, object> RewardData = new Dictionary<string, object>();
             RewardData.Add("HighestPlayerName", string.Empty);
             RewardData.Add("HighestPlayerID", HighestPlayer);
 
