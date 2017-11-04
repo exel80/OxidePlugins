@@ -27,8 +27,12 @@ namespace Oxide.Plugins
         private const string permUse = "EasyVote.Use";
         private const string permAdmin = "EasyVote.Admin";
 
+        // Usefull things
+        protected string[] voteStatus = { "No reward(s)", "Reward(s) claimed / Already claimed?", "Reward(s) claimed" };
+        protected string[] voteStatusColor = { "red", "yellow", "lime" };
+
         // Spam protect list
-        Dictionary<ulong, bool> claimCooldown = new Dictionary<ulong, bool>();
+        Dictionary<ulong, StringBuilder> claimCooldown = new Dictionary<ulong, StringBuilder>();
         Dictionary<ulong, bool> checkCooldown = new Dictionary<ulong, bool>();
 
         // List received reward(s) one big list.
@@ -231,7 +235,7 @@ namespace Oxide.Plugins
 
                     }
                     break;
-                // voteadmin removeapi (server name)
+                // voteadmin removeapi (server name) (vote site)
                 case "delapi":
                 case "removeapi":
                     {
@@ -292,7 +296,7 @@ namespace Oxide.Plugins
 
             // Check if player exist in cooldown list or not
             if (!claimCooldown.ContainsKey(player.userID))
-                claimCooldown.Add(player.userID, false);
+                claimCooldown.Add(player.userID, new StringBuilder());
             else if (claimCooldown.ContainsKey(player.userID))
                 return;
 
@@ -320,25 +324,32 @@ namespace Oxide.Plugins
                                 // Send GET request to voteAPI site.
                                 webrequest.Enqueue(_format, null, (code, response) => ClaimReward(code, response, player, site, kvp.Key), this, RequestMethod.GET, null, timeout);
 
-                                _Debug($"GET: {_format} =>\n Site: {site} Server: {kvp.Key} Id: {idKeySplit[0]}");
+                                _Debug($"Player: {player.displayName} - Check claim URL: {_format}\nSite: {site} Server: {kvp.Key} Id: {idKeySplit[0]}");
                             }
                         }
                     }
                 }
             }
 
-            // Wait 5.55 sec before execute this command.
-            // Because need make sure that plugin webrequest all api sites.
+            // Wait 5.55 sec before remove player from cooldown list.
             timer.Once(5.55f, () =>
             {
-                if (!claimCooldown[player.userID])
-                {
-                    Chat(player, $"{_lang("NoRewards", player.UserIDString)}");
-                }
-
                 // Remove player from cooldown list
                 claimCooldown.Remove(player.userID);
             });
+
+            // Wait 5.55 sec before execute this command.
+            // Because need make sure that plugin webrequest all api sites.
+            //timer.Once(5.55f, () =>
+            //{
+            //    if (!claimCooldown[player.userID])
+            //    {
+            //        Chat(player, $"{_lang("NoRewards", player.UserIDString)}");
+            //    }
+
+            //    // Remove player from cooldown list
+            //    claimCooldown.Remove(player.userID);
+            //});
         }
 
         [ChatCommand("reward")]
@@ -576,8 +587,17 @@ namespace Oxide.Plugins
         #region Webrequests
         void ClaimReward(int code, string response, BasePlayer player, string url, string serverName = null)
         {
-            _Debug($"Code: {code}, Response: {response}");
+            _Debug($"URL: {url} - Code: {code}, Response: {response}");
 
+            // Change response to number
+            // 0 = Havent voted yet OR already claimed.
+            // 1 = Voted and waiting claiming.
+            // 2 = Already claimed reward (Far us i know, RustServers is only who use this response number)
+            int responseNum = 0;
+            if (!int.TryParse(response, out responseNum))
+                _Debug($"Cant undestad vote sive {url} response, {response}");
+
+            // If vote site is down
             if (code != 200)
             {
                 PrintWarning("Error: {0} - Couldn't get an answer for {1} ({2})", code, player.displayName, url);
@@ -585,21 +605,22 @@ namespace Oxide.Plugins
                 return;
             }
 
-            switch (response)
+            // If response is 1 = Voted & not yet claimed
+            if(responseNum == 1)
+                RewardHandler(player, serverName);
+
+            // Add response to StringBuilder
+            if (claimCooldown.ContainsKey(player.userID))
             {
-                case "1":
-                    {
-                        RewardHandler(player, serverName);
-                        if (claimCooldown.ContainsKey(player.userID))
-                            claimCooldown[player.userID] = true;
-                    }
-                    break;
+                claimCooldown[player.userID].AppendLine(
+                    (string.IsNullOrEmpty(serverName) ? $"Server: {serverName}" : string.Empty) + " "
+                    + $"Checked {url} vote site. Status: <color={voteStatusColor[responseNum]}>{voteStatus[responseNum]}</color>");
             }
         }
 
         void CheckStatus(int code, string response, BasePlayer player)
         {
-            _Debug($"Code: {code}, Response: {response}");
+            _Debug($"Player: {player.displayName} - Code: {code}, Response: {response}");
 
             if (response?.ToString() == "1" && code == 200)
             {
@@ -623,6 +644,7 @@ namespace Oxide.Plugins
                 {
                     { PluginSettings.Prefix, "<color=cyan>[EasyVote]</color>" },
                     { PluginSettings.RewardIsCumulative, "false" },
+                    { PluginSettings.LogEnabled, "true" },
                     { PluginSettings.GlobalChatAnnouncments, "true" },
                     { PluginSettings.LocalChatAnnouncments, "true" }
                 },
@@ -699,6 +721,7 @@ namespace Oxide.Plugins
             public const string DiscordEnabled = "DiscordMessage Enabled (true / false)";
             public const string Alert = "Enable @here alert (true / false)";
             public const string Prefix = "Prefix";
+            public const string LogEnabled = "Enable logging => oxide/logs/EasyVote (true / false)";
             public const string RewardIsCumulative = "Vote rewards cumulative (true / false)";
             public const string GlobalChatAnnouncments = "Globally announcment in chat when player voted (true / false)";
             public const string LocalChatAnnouncments = "Send thank you message to player who voted (true / false)";
@@ -749,6 +772,9 @@ namespace Oxide.Plugins
         public void Chat(BasePlayer player, string str) => SendReply(player, $"{_config.Settings["Prefix"]} " + str);
         public void _Debug(string msg)
         {
+            if (Convert.ToBoolean(_config.Settings[PluginSettings.LogEnabled]))
+                LogToFile("EasyVote", msg, this);
+
             if (DEBUG)
                 Puts($"[Debug] {msg}");
         }
