@@ -201,12 +201,86 @@ namespace Oxide.Plugins
             if (!hasPermission(player, permAdmin))
                 return;
 
+            if (args?.Length > 1)
+            {
+                //TODO: Usage
+                return;
+            }
+
+            switch (args[0].ToLower())
+            {
+                // voteadmin addserver (serverName)
+                case "addserv":
+                case "addserver":
+                    {
+
+                    }
+                    break;
+                // voteadmin removeserver (serverName)
+                case "deleserv":
+                case "delserver":
+                case "removeserv":
+                case "removeserver":
+                    {
+
+                    }
+                    break;
+                // voteadmin addapi (server name) (vote site) (ID) (KEY)
+                case "addapi":
+                    {
+
+                    }
+                    break;
+                // voteadmin removeapi (server name)
+                case "delapi":
+                case "removeapi":
+                    {
+
+                    }
+                    break;
+                // voteadmin addreward (reward number) (variables without spaces, split with , char)
+                case "addreward":
+                    {
+
+                    }
+                    break;
+                // voteadmin removereward (reward number)
+                case "delreward":
+                case "removereward":
+                    {
+
+                    }
+                    break;
+                // voteadmin editreward (reward number) TODO: PLAN THIS!
+                case "editreward":
+                    {
+
+                    }
+                    break;
+                // voteadmin showcmds
+                case "showcmds":
+                case "showcommands":
+                    {
+
+                    }
+                    break;
+                // voteadmin testreward (reward number)
+                case "testreward":
+                    {
+
+                    }
+                    break;
+            }
+
             // TODO: Add admin commands
+            // addserver <serverName>
+            // removeserver <serverName>
+            // addapi <serverName> <voteSitesApi> <id> <key>
+            // removeapi <serverName> <voteSitesApi>
             // addreward <reward name (only number)> <commands in ">
             // removereward <reward name (only number)>
             // editreward <reward name (only number)> => Show voteX rewards => /voteadmin +"asdasdasd" -"asdasd"
             // showcmds 
-            // testapi <VoteSitesAPI (name)> <id> <key>
             // testreward <reward name (only number)>
         }
 
