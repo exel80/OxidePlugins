@@ -27,7 +27,10 @@ namespace Oxide.Plugins
         private const string permUse = "EasyVote.Use";
         private const string permAdmin = "EasyVote.Admin";
 
-        // Usefull things
+        // Vote status arrays
+        // 0 = Havent voted yet OR already claimed.
+        // 1 = Voted and waiting claiming.
+        // 2 = Already claimed reward (Far us i know, RustServers is only who use this response number)
         protected string[] voteStatus = { "No reward(s)", "Reward(s) claimed / Already claimed?", "Reward(s) claimed" };
         protected string[] voteStatusColor = { "red", "yellow", "lime" };
 
@@ -334,6 +337,9 @@ namespace Oxide.Plugins
             // Wait 5.55 sec before remove player from cooldown list.
             timer.Once(5.55f, () =>
             {
+                // Print builded stringbuilder
+                Chat(player, claimCooldown[player.userID].ToString());
+
                 // Remove player from cooldown list
                 claimCooldown.Remove(player.userID);
             });
@@ -590,9 +596,6 @@ namespace Oxide.Plugins
             _Debug($"URL: {url} - Code: {code}, Response: {response}");
 
             // Change response to number
-            // 0 = Havent voted yet OR already claimed.
-            // 1 = Voted and waiting claiming.
-            // 2 = Already claimed reward (Far us i know, RustServers is only who use this response number)
             int responseNum = 0;
             if (!int.TryParse(response, out responseNum))
                 _Debug($"Cant undestad vote sive {url} response, {response}");
@@ -613,8 +616,8 @@ namespace Oxide.Plugins
             if (claimCooldown.ContainsKey(player.userID))
             {
                 claimCooldown[player.userID].AppendLine(
-                    (string.IsNullOrEmpty(serverName) ? $"Server: {serverName}" : string.Empty) + " "
-                    + $"Checked {url} vote site. Status: <color={voteStatusColor[responseNum]}>{voteStatus[responseNum]}</color>");
+                    (string.IsNullOrEmpty(serverName) ? $"[{serverName}]" : string.Empty) + " "
+                    + $"Checked {url} vote site.. Status: <color={voteStatusColor[responseNum]}>{voteStatus[responseNum]}</color>");
             }
         }
 

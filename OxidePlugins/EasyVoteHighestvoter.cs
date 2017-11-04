@@ -300,15 +300,20 @@ namespace Oxide.Plugins
                 // Group reward
                 else if (config.rewardIs.ToLower() == "group")
                 {
-                    // Execute console command
-                    rust.RunServerCommand($"oxide.usergroup add {HighestPlayer} {config.group}");
+                    // Add user to group
+                    permission.AddUserGroup(HighestPlayer, config.group);
+                    //rust.RunServerCommand($"oxide.usergroup add {HighestPlayer} {config.group}");
 
                     RewardData["Reward"] = config.group;
 
                     RewardData["ReceivedReward"] = "true";
 
+                    // If there was old highest player, remove his from group
                     if (!string.IsNullOrEmpty(OldHighestPlayer))
-                        rust.RunServerCommand($"oxide.usergroup remove {OldHighestPlayer} {config.group}");
+                    {
+                        permission.AddUserGroup(OldHighestPlayer, config.group);
+                        //rust.RunServerCommand($"oxide.usergroup remove {OldHighestPlayer} {config.group}");
+                    }
                 }
                 else
                     PrintWarning($"{config.rewardIs.ToLower()} cant be detected. Please, use \"group\" or \"item\" only!");
@@ -319,8 +324,9 @@ namespace Oxide.Plugins
             // Group reward
             else if (config.rewardIs.ToLower() == "group")
             {
-                // Execute console command
-                rust.RunServerCommand($"oxide.usergroup add {HighestPlayer} {config.group}");
+                // Add user to group
+                permission.AddUserGroup(HighestPlayer, config.group);
+                //rust.RunServerCommand($"oxide.usergroup add {HighestPlayer} {config.group}");
 
                 RewardData["Reward"] = config.group;
 
@@ -329,8 +335,12 @@ namespace Oxide.Plugins
                 // Congrats msg <3
                 Congrats(HighestPlayer);
 
+                // If there was old highest player, remove his from group
                 if (!string.IsNullOrEmpty(OldHighestPlayer))
-                    rust.RunServerCommand($"oxide.usergroup remove {OldHighestPlayer} {config.group}");
+                {
+                    permission.AddUserGroup(OldHighestPlayer, config.group);
+                    //rust.RunServerCommand($"oxide.usergroup remove {OldHighestPlayer} {config.group}");
+                }
             }
             else
                 PrintWarning($"{config.rewardIs.ToLower()} cant be detected. Please, use \"group\" or \"item\" only!");
