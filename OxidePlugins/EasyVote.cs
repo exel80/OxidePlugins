@@ -23,7 +23,7 @@ namespace Oxide.Plugins
 
         #region Initializing
         // Permissions
-        private const bool DEBUG = false;
+        private const bool DEBUG = true;
         private const string permUse = "EasyVote.Use";
         private const string permAdmin = "EasyVote.Admin";
 
@@ -31,8 +31,8 @@ namespace Oxide.Plugins
         // 0 = Havent voted yet OR already claimed.
         // 1 = Voted and waiting claiming.
         // 2 = Already claimed reward (Far us i know, RustServers is only who use this response number)
-        protected string[] voteStatus = { "No reward(s)", "Reward(s) claimed / Already claimed?", "Reward(s) claimed" };
-        protected string[] voteStatusColor = { "red", "yellow", "lime" };
+        protected string[] voteStatus = { "No reward(s)", "Claim reward(s)", "Claim reward(s) / Already claimed?" };
+        protected string[] voteStatusColor = { "red", "lime", "yellow" };
 
         // Spam protect list
         Dictionary<ulong, StringBuilder> claimCooldown = new Dictionary<ulong, StringBuilder>();
@@ -66,7 +66,6 @@ namespace Oxide.Plugins
         {
             // Load configs
             LoadConfigValues();
-            LoadDefaultMessages();
 
             // Check available vote sites
             checkVoteSites();
@@ -83,7 +82,7 @@ namespace Oxide.Plugins
         #region Localization
         string _lang(string key, string id = null, params object[] args) => string.Format(lang.GetMessage(key, this, id), args);
 
-        void LoadDefaultMessages()
+        protected void LoadDefaultMessages()
         {
             lang.RegisterMessages(new Dictionary<string, string>
             {
@@ -327,7 +326,7 @@ namespace Oxide.Plugins
                                 // Send GET request to voteAPI site.
                                 webrequest.Enqueue(_format, null, (code, response) => ClaimReward(code, response, player, site, kvp.Key), this, RequestMethod.GET, null, timeout);
 
-                                _Debug($"Player: {player.displayName} - Check claim URL: {_format}\nSite: {site} Server: {kvp.Key} Id: {idKeySplit[0]}");
+                                _Debug($"Player: {player.displayName} - Check claim URL: {_format}\nSite: {site} Server: {kvp.Key} VoteAPI-ID: {idKeySplit[0]} VoteAPI-KEY: {idKeySplit[1]}");
                             }
                         }
                     }
@@ -338,7 +337,7 @@ namespace Oxide.Plugins
             timer.Once(5.55f, () =>
             {
                 // Print builded stringbuilder
-                Chat(player, claimCooldown[player.userID].ToString());
+                Chat(player, claimCooldown[player.userID].ToString(), false);
 
                 // Remove player from cooldown list
                 claimCooldown.Remove(player.userID);
@@ -608,17 +607,17 @@ namespace Oxide.Plugins
                 return;
             }
 
-            // If response is 1 = Voted & not yet claimed
-            if(responseNum == 1)
-                RewardHandler(player, serverName);
-
             // Add response to StringBuilder
             if (claimCooldown.ContainsKey(player.userID))
             {
                 claimCooldown[player.userID].AppendLine(
-                    (string.IsNullOrEmpty(serverName) ? $"[{serverName}]" : string.Empty) + " "
-                    + $"Checked {url} vote site.. Status: <color={voteStatusColor[responseNum]}>{voteStatus[responseNum]}</color>");
+                    (!string.IsNullOrEmpty(serverName) ? $"<color=cyan>[{serverName}]</color> " : string.Empty)
+                    + $"Checked {url}, status: <color={voteStatusColor[responseNum]}>{voteStatus[responseNum]}</color>");
             }
+
+            // If response is 1 = Voted & not yet claimed
+            if (responseNum == 1)
+                RewardHandler(player, serverName);
         }
 
         void CheckStatus(int code, string response, BasePlayer player)
@@ -772,7 +771,7 @@ namespace Oxide.Plugins
         #endregion
 
         #region Helper 
-        public void Chat(BasePlayer player, string str) => SendReply(player, $"{_config.Settings["Prefix"]} " + str);
+        public void Chat(BasePlayer player, string str, bool prefix = true) => SendReply(player, (prefix != false ? $"{_config.Settings["Prefix"]} " : string.Empty) + str);
         public void _Debug(string msg)
         {
             if (Convert.ToBoolean(_config.Settings[PluginSettings.LogEnabled]))
