@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("EasyVote-HighestVoter", "Exel80", "1.0.0")]
+    [Info("EasyVote-HighestVoter", "Exel80", "1.0.0", ResourceId = 2671)]
     class EasyVoteHighestvoter : RustPlugin
     {
         // EasyVote is life and <3
@@ -24,7 +24,7 @@ namespace Oxide.Plugins
         void onUserReceiveHighestVoterReward(Dictionary<string, object> RewardData)
         {
             // Convert to bool
-            bool ReceivedReward = Convert.ToBoolean(RewardData["ReceivedReward"]);
+            bool ReceivedReward = (bool)RewardData["ReceivedReward"];
 
             // Logging data to oxide/logs/EasyVoteHighestvoter
             if (config.logEnabled)
@@ -227,7 +227,7 @@ namespace Oxide.Plugins
             RewardData.Add("OldHighestPlayerID", OldHighestPlayer);
             RewardData.Add("RewardType", (config.rewardIs.ToLower() != "item" ? "group" : "item"));
             RewardData.Add("Reward", string.Empty);
-            RewardData.Add("ReceivedReward", "false");
+            RewardData.Add("ReceivedReward", false);
 
             // Try found player
             BasePlayer player = FindPlayer(HighestPlayer).FirstOrDefault();
@@ -262,7 +262,7 @@ namespace Oxide.Plugins
 
                                     tempItems.Append($"{amount}x {itemToReceive.info.displayName.translated}, ");
 
-                                    RewardData["ReceivedReward"] = "true";
+                                    RewardData["ReceivedReward"] = true;
 
                                     //If the item does not end up in the inventory
                                     //Drop it on the ground for them
@@ -286,7 +286,7 @@ namespace Oxide.Plugins
 
                                 RewardData["Reward"] = $"{amount}x {itemToReceive.info.displayName.translated}";
 
-                                RewardData["ReceivedReward"] = "true";
+                                RewardData["ReceivedReward"] = true;
 
                                 //If the item does not end up in the inventory
                                 //Drop it on the ground for them
@@ -306,7 +306,7 @@ namespace Oxide.Plugins
 
                     RewardData["Reward"] = config.group;
 
-                    RewardData["ReceivedReward"] = "true";
+                    RewardData["ReceivedReward"] = true;
 
                     // If there was old highest player, remove his from group
                     if (!string.IsNullOrEmpty(OldHighestPlayer))
@@ -330,7 +330,7 @@ namespace Oxide.Plugins
 
                 RewardData["Reward"] = config.group;
 
-                RewardData["ReceivedReward"] = "true";
+                RewardData["ReceivedReward"] = true;
 
                 // Congrats msg <3
                 Congrats(HighestPlayer);
