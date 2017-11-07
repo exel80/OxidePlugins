@@ -23,7 +23,7 @@ namespace Oxide.Plugins
 
         #region Initializing
         // Permissions
-        private const bool DEBUG = true;
+        private const bool DEBUG = false;
         private const string permUse = "EasyVote.Use";
         private const string permAdmin = "EasyVote.Admin";
 
@@ -40,9 +40,6 @@ namespace Oxide.Plugins
 
         // List received reward(s) one big list.
         StringBuilder rewardsString = new StringBuilder();
-
-        // Global bools
-        private bool NoReward = true;
 
         // List all vote sites.
         List<string> availableAPISites = new List<string>();
@@ -126,8 +123,13 @@ namespace Oxide.Plugins
 
         private void SendHelpText(BasePlayer player)
         {
+            // User
             if (hasPermission(player, permUse))
                 player.ChatMessage(helpYou.ToString());
+
+            // Admin
+            //if (hasPermission(player, permAdmin))
+            //    player.ChatMessage(helpYou.ToString());
         }
 
         void OnPlayerSleepEnded(BasePlayer player)
@@ -315,12 +317,30 @@ namespace Oxide.Plugins
                         if (vp.Key != site)
                             continue;
 
+                        if (!vp.Value.Contains(":"))
+                        {
+                            _Debug($"{kvp.Key} {vp.Key} does NOT contains ID or Key !!!");
+                            continue;
+                        }
+                        else if (vp.Value.Split(':')[0] == "ID")
+                        {
+                            _Debug($"{kvp.Key} {vp.Key} does NOT contains ID !!!");
+                            continue;
+                        }
+                        else if (vp.Value.Split(':')[1] == "KEY")
+                        {
+                            _Debug($"{kvp.Key} {vp.Key} does NOT contains KEY !!!");
+                            continue;
+                        }
+
                         string[] idKeySplit = vp.Value.Split(':');
                         foreach (KeyValuePair<string, string> SitesApi in _config.VoteSitesAPI[site])
                         {
                             if (SitesApi.Key == PluginSettings.apiClaim)
                             {
-                                // Formating api claim => {0} = Key & {1} Id
+                                // Formating api claim =>
+                                // {0} = Key
+                                // {1} PlayerID
                                 // Example: "http://rust-servers.net/api/?action=custom&object=plugin&element=reward&key= {0} &steamid= {1} ",
                                 string _format = String.Format(SitesApi.Value, idKeySplit[1], player.userID);
 
@@ -776,7 +796,7 @@ namespace Oxide.Plugins
         public void _Debug(string msg)
         {
             if (Convert.ToBoolean(_config.Settings[PluginSettings.LogEnabled]))
-                LogToFile("EasyVote", msg, this);
+                LogToFile("EasyVote", $"[{DateTime.UtcNow.ToString()}] {msg}", this);
 
             if (DEBUG)
                 Puts($"[Debug] {msg}");
@@ -916,6 +936,23 @@ namespace Oxide.Plugins
                 {
                     foreach (KeyValuePair<string, string> vp in kvp.Value)
                     {
+                        // Null checking
+                        if (!vp.Value.Contains(":"))
+                        {
+                            _Debug($"{kvp.Key} {vp.Key} does NOT contains ID or Key !!!");
+                            continue;
+                        }
+                        else if (vp.Value.Split(':')[0] == "ID")
+                        {
+                            _Debug($"{kvp.Key} {vp.Key} does NOT contains ID !!!");
+                            continue;
+                        }
+                        else if (vp.Value.Split(':')[1] == "KEY")
+                        {
+                            _Debug($"{kvp.Key} {vp.Key} does NOT contains KEY !!!");
+                            continue;
+                        }
+
                         if (vp.Key == site)
                         {
                             string[] idKeySplit = vp.Value.Split(':');
