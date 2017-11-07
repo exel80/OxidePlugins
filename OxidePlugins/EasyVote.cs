@@ -15,7 +15,7 @@ using Oxide.Core.Libraries.Covalence;
 
 namespace Oxide.Plugins
 {
-    [Info("EasyVote", "Exel80", "2.0.2", ResourceId = 2102)]
+    [Info("EasyVote", "Exel80", "2.0.21", ResourceId = 2102)]
     [Description("Simple and smooth voting start by activating one scirpt.")]
     class EasyVote : RustPlugin
     {
@@ -63,6 +63,7 @@ namespace Oxide.Plugins
         {
             // Load configs
             LoadConfigValues();
+            LoadMessages();
 
             // Check available vote sites
             checkVoteSites();
@@ -79,7 +80,7 @@ namespace Oxide.Plugins
         #region Localization
         string _lang(string key, string id = null, params object[] args) => string.Format(lang.GetMessage(key, this, id), args);
 
-        protected void LoadDefaultMessages()
+        private void LoadMessages()
         {
             lang.RegisterMessages(new Dictionary<string, string>
             {
@@ -718,11 +719,11 @@ namespace Oxide.Plugins
                     ["oxiderevokegroup"] = "oxide.usergroup remove {playerid} {value}",
                     ["tempaddgroup"] = "addgroup {playerid} {value} {value2}",
                     ["tempgrantperm"] = "grantperm {playerid} {value} {value2}",
-                    ["zlvl-c"] = "zl.lvl {playername} C +{value}",
-                    ["zlvl-wc"] = "zl.lvl {playername} WC +{value}",
-                    ["zlvl-m"] = "zl.lvl {playername} M +{value}",
-                    ["zlvl-s"] = "zl.lvl {playername} S +{value}",
-                    ["zlvl-*"] = "zl.lvl {playername} * +{value}",
+                    ["zlvl-c"] = "zl.lvl {playerid} C +{value}",
+                    ["zlvl-wc"] = "zl.lvl {playerid} WC +{value}",
+                    ["zlvl-m"] = "zl.lvl {playerid} M +{value}",
+                    ["zlvl-s"] = "zl.lvl {playerid} S +{value}",
+                    ["zlvl-*"] = "zl.lvl {playerid} * +{value}",
                 }
             };
             return defaultConfig;
