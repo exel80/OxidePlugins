@@ -15,7 +15,7 @@ using Oxide.Core.Libraries.Covalence;
 
 namespace Oxide.Plugins
 {
-    [Info("EasyVote", "Exel80", "2.0.1", ResourceId = 2102)]
+    [Info("EasyVote", "Exel80", "2.0.2", ResourceId = 2102)]
     [Description("Simple and smooth voting start by activating one scirpt.")]
     class EasyVote : RustPlugin
     {
@@ -155,10 +155,11 @@ namespace Oxide.Plugins
                         string[] idKeySplit = vp.Value.Split(':');
                         foreach (KeyValuePair<string, string> SitesApi in _config.VoteSitesAPI[site])
                         {
-                            if (SitesApi.Key == PluginSettings.apiClaim)
+                            if (SitesApi.Key == PluginSettings.apiStatus)
                             {
-                                // Formating api claim => {0} = Key & {1} Id
-                                // Example: "http://rust-servers.net/api/?object=votes&element=claim&key= {0} &steamid= {1} ",
+                                // Formating api claim =>
+                                // {0} = Key
+                                // {1} PlayerID
                                 string _format = String.Format(SitesApi.Value, idKeySplit[1], player.userID);
 
                                 // Send GET request to voteAPI site.
