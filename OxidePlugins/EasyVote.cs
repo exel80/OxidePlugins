@@ -62,8 +62,8 @@ namespace Oxide.Plugins
         void Init()
         {
             // Load configs
-            LoadConfigValues();
             LoadMessages();
+            LoadConfigValues();
 
             // Check available vote sites
             checkVoteSites();
