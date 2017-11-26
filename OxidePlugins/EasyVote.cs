@@ -12,7 +12,7 @@ using Oxide.Core.Libraries.Covalence;
 
 namespace Oxide.Plugins
 {
-    [Info("EasyVote", "Exel80", "2.0.21", ResourceId = 2102)]
+    [Info("EasyVote", "Exel80", "2.0.3", ResourceId = 2102)]
     [Description("Simple and smooth voting start by activating one scirpt.")]
     class EasyVote : RustPlugin
     {
@@ -762,11 +762,13 @@ namespace Oxide.Plugins
         }
         void LoadConfigValues()
         {
+            // Load config file
             _config = Config.ReadObject<PluginConfig>();
             var defaultConfig = DefaultConfig();
 
             try
             {
+                // Try merge config
                 Merge(_config.Settings, defaultConfig.Settings);
                 Merge(_config.Discord, defaultConfig.Discord);
                 Merge(_config.Servers, defaultConfig.Servers, true);
@@ -774,12 +776,25 @@ namespace Oxide.Plugins
                 Merge(_config.Rewards, defaultConfig.Rewards, true);
                 Merge(_config.Commands, defaultConfig.Commands, true);
             }
-            catch (Exception ex)
+            catch
             {
-                PrintError($"Something went wrong when Merging configs. Try reload plugin\n{ex.ToString()}");
-                configChanged = true;
+                // Print warning
+                PrintWarning($"Could not read oxide/config/{Name}.json, creating new config file");
+
+                // Load default config
+                LoadDefaultConfig();
+                _config = Config.ReadObject<PluginConfig>();
+
+                // Merge config again
+                Merge(_config.Settings, defaultConfig.Settings);
+                Merge(_config.Discord, defaultConfig.Discord);
+                Merge(_config.Servers, defaultConfig.Servers, true);
+                Merge(_config.VoteSitesAPI, defaultConfig.VoteSitesAPI, true);
+                Merge(_config.Rewards, defaultConfig.Rewards, true);
+                Merge(_config.Commands, defaultConfig.Commands, true);
             }
 
+            // If config changed, run this
             if (!configChanged) return;
             PrintWarning("Configuration file(s) updated!");
             Config.WriteObject(_config);
@@ -797,6 +812,7 @@ namespace Oxide.Plugins
             foreach (var oldPair in oldPairs)
             {
                 if (bypass) continue;
+                current.Remove(oldPair);
                 configChanged = true;
             }
         }
