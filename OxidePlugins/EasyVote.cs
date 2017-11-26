@@ -620,7 +620,7 @@ namespace Oxide.Plugins
             // Change response to number
             int responseNum = 0;
             if (!int.TryParse(response, out responseNum))
-                _Debug($"Cant undestad vote sive {url} response, {response}");
+                _Debug($"Cant understand vote site {url} response \"{response}\"");
 
             // If vote site is down
             if (code != 200)
