@@ -111,6 +111,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Rust\Autokick.cs" />
+    <Compile Include="Rust\BlockCmdMount.cs" />
     <Compile Include="Rust\ConnectionLimiter.cs" />
     <Compile Include="Rust\EasyVote.cs" />
     <Compile Include="Rust\EasyVoteHighestvoter.cs" />
