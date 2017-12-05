@@ -117,6 +117,7 @@
     <Compile Include="Rust\EasyVoteHighestvoter.cs" />
     <Compile Include="Holdfast\testPlugin.cs" />
     <Compile Include="Rust\LampController.cs" />
+    <Compile Include="Rust\RustySheriffAlertSystem.cs" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
