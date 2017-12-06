@@ -10,25 +10,26 @@ namespace Oxide.Plugins
     [Description("Block commands while mounted")]
     class BlockCmdMount : RustPlugin
     {
-        //FIX: OnServerCommand block all chating?
-
-        #region Init
-
-        #endregion
-
         #region Block Commands
 
         // Block / commands
-        //private object OnUserCommand(IPlayer player, string command, string[] args)
-        //{
-        //    BasePlayer _player = player.Object as BasePlayer;
+        private object OnUserCommand(IPlayer player, string command, string[] args)
+        {
+            BasePlayer _player = player.Object as BasePlayer;
 
-        //    Puts((!_player.isMounted ? false : true).ToString());
+            //Puts((!_player.isMounted ? false : true).ToString());
 
-        //    //if (arg.connection.authlevel < 0) return null;
-        //    if (_player.isMounted) return false;
-        //    return null;
-        //}
+            // Bypass admins
+            if (_player.IsAdmin) return null;
+
+            // isMounted?
+            if (_player.isMounted)
+            {
+                SendReply(_player, "You can NOT use command while sitting!");
+                return false;
+            }
+            return null;
+        }
 
         //private object OnServerCommand(ConsoleSystem.Arg arg)
         //{
@@ -45,7 +46,7 @@ namespace Oxide.Plugins
         private object OnPlayerChat(ConsoleSystem.Arg arg)
         {
             // Bypass admins
-            //if (arg.Connection.authLevel < 0) return null;
+            if (arg.Connection.authLevel < 0) return null;
 
             // Get BasePlayer
             BasePlayer player = (BasePlayer)arg.Connection.player;
@@ -55,7 +56,6 @@ namespace Oxide.Plugins
 
             // Get message
             string message = arg.GetString(0, "text");
-            Puts(message[0].ToString());
 
             // Check first char, if its / or !
             if (message[0] == '!')
