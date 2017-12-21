@@ -1052,20 +1052,44 @@ namespace Oxide.Plugins
         #endregion
 
         #region API
+        // Output : string() UserID;
+        // If there multiple player has same vote value, include them all in one string.
+        // Multiple player output format: userid,userid,userid .. etc
         private string getHighestvoter()
         {
+            // Helppers
             string output = string.Empty;
+            int tempValue = 0;
             Dictionary<string, int> tempList = new Dictionary<string, int>();
 
+            // Receive EasyVote StoreData and save it to tempList.
             foreach (KeyValuePair<string, PlayerData> item in _storedData.Players)
                 tempList.Add(item.Key, item.Value.voted);
 
-            foreach (var item in tempList.OrderByDescending(key => key.Value).Take(1))
-                output = item.Key;
-
+            // Loop tempList
+            foreach (var item in tempList.OrderByDescending(key => key.Value))
+            {
+                // If tempValue isnt null.
+                if (tempValue != 0)
+                {
+                    // If tempValue match.
+                    if (item.Value == tempValue)
+                    {
+                        output += $",{item.Key}";
+                        continue;
+                    }
+                }
+                // Is null or empty output, if not then return it.
+                else if (string.IsNullOrEmpty(output))
+                    return output;
+                // Save UserID to output.
+                else
+                    output = item.Key;
+            }
             return output;
         }
 
+        // Output : string() UserID;
         private string getLastvoter()
         {
             string output = string.Empty;
@@ -1080,6 +1104,7 @@ namespace Oxide.Plugins
             return output;
         }
 
+        // Output : Only console message.
         private void resetData(bool backup = true)
         {
             string currentTime = DateTime.UtcNow.ToString("dd-MM-yyyy");
