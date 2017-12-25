@@ -1105,6 +1105,25 @@ namespace Oxide.Plugins
         }
 
         // Output : Only console message.
+        private void resetPlayerVotedData(string steamID, bool displayMessage = true)
+        {
+            // Null checks
+            if (string.IsNullOrEmpty(steamID))
+                return;
+
+            if (!_storedData.Players.ContainsKey(steamID))
+                return;
+
+            // Reset voted data
+            _storedData.Players[steamID].voted = 0;
+            Interface.GetMod().DataFileSystem.WriteObject("EasyVote", _storedData);
+
+            // Print console message
+            if(displayMessage)
+                Puts($"Player '{steamID}' voted data has been reseted.");
+        }
+
+        // Output : Only console message.
         private void resetData(bool backup = true)
         {
             string currentTime = DateTime.UtcNow.ToString("dd-MM-yyyy");
