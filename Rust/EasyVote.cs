@@ -1069,22 +1069,23 @@ namespace Oxide.Plugins
             // Loop tempList
             foreach (var item in tempList.OrderByDescending(key => key.Value))
             {
-                // If tempValue isnt null.
+                // Run once
+                if (tempValue == 0)
+                {
+                    output = item.Key;
+                    tempValue = item.Value;
+                    continue;
+                }
+
                 if (tempValue != 0)
                 {
                     // If tempValue match.
                     if (item.Value == tempValue)
                     {
                         output += $",{item.Key}";
-                        continue;
                     }
+                    continue;
                 }
-                // Is null or empty output, if not then return it.
-                else if (string.IsNullOrEmpty(output))
-                    return output;
-                // Save UserID to output.
-                else
-                    output = item.Key;
             }
             return output;
         }
@@ -1119,7 +1120,7 @@ namespace Oxide.Plugins
             Interface.GetMod().DataFileSystem.WriteObject("EasyVote", _storedData);
 
             // Print console message
-            if(displayMessage)
+            if (displayMessage)
                 Puts($"Player '{steamID}' voted data has been reseted.");
         }
 
