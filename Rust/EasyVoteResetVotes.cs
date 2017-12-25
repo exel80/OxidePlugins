@@ -11,6 +11,8 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
+    [Info("EasyVoteResetVotes", "Exel80", "1.0.0")]
+    [Description("Reset player votes, when votes a certain time.")]
     class EasyVoteResetVotes : RustPlugin
     {
         // EasyVote is life and ♥
