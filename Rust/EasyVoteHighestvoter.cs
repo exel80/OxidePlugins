@@ -49,13 +49,13 @@ namespace Oxide.Plugins
                             // New
                             LogToFile("Highestvoter",
                                 $"[{DateTime.UtcNow.ToString()}] [HighestPlayer: {RewardData["HighestPlayerName"].ToString()} Id: {RewardData["HighestPlayerID"].ToString()}] " +
-                                $"Voter has been added to his reward group => {RewardData["Reward"].ToString()}", this);
+                                $"Voter has been added to his reward group => {config.group}", this);
                             // Old
                             if (!string.IsNullOrEmpty(RewardData["OldHighestPlayerID"].ToString()))
                             {
                                 LogToFile("Highestvoter",
                                 $"[{DateTime.UtcNow.ToString()}] [OldHighestPlayerID: {RewardData["OldHighestPlayerID"]}] " +
-                                $"Removed from his reward group => {RewardData["Reward"].ToString()}", this);
+                                $"Removed from his reward group => {config.group}", this);
                             }
                         }
                         break;
@@ -403,7 +403,7 @@ namespace Oxide.Plugins
             if (config.rewardIs.ToLower() == "item")
                 PrintToChat(_lang("HighestItemsCongrats", id, name, $"\"{config.item.Trim().Replace(",", ", ")}\""));
             else if (config.rewardIs.ToLower() == "both")
-                PrintToChat(_lang("HighestItemsCongrats", id, name, $"\"{config.item.Trim().Replace(",", ", ")}\""), config.group);
+                PrintToChat(_lang("HighestBothCongrats", id, name, $"\"{config.item.Trim().Replace(",", ", ")}\"", config.group));
             else
                 PrintToChat(_lang("HighestGroupCongrats", id, name, config.group));
         }

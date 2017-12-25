@@ -12,7 +12,7 @@ using Oxide.Core.Libraries.Covalence;
 
 namespace Oxide.Plugins
 {
-    [Info("EasyVote", "Exel80", "2.0.31", ResourceId = 2102)]
+    [Info("EasyVote", "Exel80", "2.0.32", ResourceId = 2102)]
     [Description("Simple and smooth voting start by activating one scirpt.")]
     class EasyVote : RustPlugin
     {
@@ -1116,12 +1116,13 @@ namespace Oxide.Plugins
                 return;
 
             // Reset voted data
+            int old = _storedData.Players[steamID].voted;
             _storedData.Players[steamID].voted = 0;
             Interface.GetMod().DataFileSystem.WriteObject("EasyVote", _storedData);
 
             // Print console message
             if (displayMessage)
-                Puts($"Player '{steamID}' voted data has been reseted.");
+                Puts($"Player '{steamID}' vote(s) data has been reseted from {old} to 0.");
         }
 
         // Output : Only console message.
