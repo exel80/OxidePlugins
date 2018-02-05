@@ -14,7 +14,7 @@ namespace Oxide.Plugins
 {
     [Info("EasyVote", "Exel80", "2.0.32", ResourceId = 2102)]
     [Description("Simple and smooth voting start by activating one scirpt.")]
-    class EasyVote : RustPlugin
+    internal class EasyVote : RustPlugin
     {
         [PluginReference] private Plugin DiscordMessages;
 
