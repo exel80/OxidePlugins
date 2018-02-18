@@ -873,11 +873,7 @@ namespace Oxide.Plugins
                     { PluginSettings.Title, "Vote" },
                     { PluginSettings.WebhookURL, "" }
                 },
-                Servers = new Dictionary<string, Dictionary<string, string>>
-                {
-                    { "ServerName1", new Dictionary<string, string>() { { "Beancan", "ID:KEY" }, { "RustServers", "ID:KEY" } } },
-                    { "ServerName2", new Dictionary<string, string>() { { "Beancan", "ID:KEY" } } }
-                },
+                Servers = new Dictionary<string, Dictionary<string, string>> { },
                 VoteSitesAPI = new Dictionary<string, Dictionary<string, string>>
                 {
                     { "RustServers",
