@@ -12,7 +12,7 @@ using Oxide.Core.Libraries.Covalence;
 
 namespace Oxide.Plugins
 {
-    [Info("EasyVote", "Exel80", "2.0.34", ResourceId = 2102)]
+    [Info("EasyVote", "Exel80", "2.0.4", ResourceId = 2102)]
     [Description("Simple and smooth voting start by activating one scirpt.")]
     class EasyVote : RustPlugin
     {
@@ -39,10 +39,34 @@ namespace Oxide.Plugins
         StringBuilder rewardsString = new StringBuilder();
 
         // List all vote sites.
-        List<string> availableAPISites = new List<string>();
+        List<string> _availableAPISites = new List<string>();
         StringBuilder _voteList = new StringBuilder();
-        StringBuilder helpYou = new StringBuilder();
-        private List<int> numberMax = new List<int>();
+        private List<int> _numberMax = new List<int>();
+        StringBuilder _helpYou = new StringBuilder();
+        StringBuilder _helpAdmin = new StringBuilder();
+
+        private void _ReloadEasyVote(bool WriteObject = true)
+        {
+            if (WriteObject)
+            {
+                Config.WriteObject(_config);
+                PrintWarning($"Config saved successfully!");
+            }
+
+            // This is only used when ADMIN
+            // reload EasyVote with EasyVote own command.
+            LoadConfigValues();
+            LoadMessages();
+
+            _numberMax.Clear();
+            BuildNumberMax();
+
+            _availableAPISites.Clear();
+            checkVoteSites();
+
+            _voteList.Clear();
+            voteList();
+        }
 
         void Loaded()
         {
@@ -122,11 +146,11 @@ namespace Oxide.Plugins
         {
             // User
             if (hasPermission(player, permUse))
-                player.ChatMessage(helpYou.ToString());
+                player.ChatMessage(_helpYou.ToString());
 
             // Admin
-            //if (hasPermission(player, permAdmin))
-            //    player.ChatMessage(helpYou.ToString());
+            if (hasPermission(player, permAdmin))
+                player.ChatMessage(_helpAdmin.ToString());
         }
 
         void OnPlayerSleepEnded(BasePlayer player)
@@ -142,7 +166,7 @@ namespace Oxide.Plugins
 
             var timeout = 5500f; // Timeout (in milliseconds)
 
-            foreach (var site in availableAPISites.ToList())
+            foreach (var site in _availableAPISites.ToList())
             {
                 foreach (KeyValuePair<string, Dictionary<string, string>> kvp in _config.Servers)
                 {
@@ -189,7 +213,8 @@ namespace Oxide.Plugins
         [ChatCommand("vote")]
         void cmdVote(BasePlayer player, string command, string[] args)
         {
-            if (!hasPermission(player, permUse)){
+            if (!hasPermission(player, permUse))
+            {
                 Chat(player, _lang("NoPermission", player.UserIDString));
                 return;
             }
@@ -206,50 +231,209 @@ namespace Oxide.Plugins
         [ChatCommand("voteadmin")]
         void cmdVoteAdmin(BasePlayer player, string command, string[] args)
         {
+            string errorString = "_ERROR_";
             if (!hasPermission(player, permAdmin))
                 return;
 
-            if (args?.Length > 1)
+            if (args?.Length < 1)
             {
-                //TODO: Usage
+                player.ChatMessage(_helpAdmin.ToString());
                 return;
             }
 
             switch (args[0].ToLower())
             {
-                // voteadmin addserver (serverName)
-                case "addserv":
-                case "addserver":
+                default:
                     {
-
+                        player.ChatMessage(_helpAdmin.ToString());
                     }
                     break;
-                // voteadmin removeserver (serverName)
-                case "deleserv":
-                case "delserver":
-                case "removeserv":
-                case "removeserver":
+                // voteadmin addvotepage (server name) (vote site) (ID) (KEY)
+                case "addvotepage":
+                case "addvote":
                     {
+                        if (args.Length < 4)
+                        {
+                            StringBuilder _temp = new StringBuilder();
 
+                            for (int i = 0; i < _availableAPISites.Count; i++)
+                                _temp.AppendLine($" - [ID: {i}] {_availableAPISites[i]}");
+
+                            Chat(player, $"USAGE: /voteadmin addvotepage (ServerName) (VoteSite ID) (API ID) (API KEY)\n"
+                                 + $"VoteSite ID LIST:\n{_temp.ToString()}");
+                            _temp.Clear();
+
+                            return;
+                        }
+
+                        string serverName = (!string.IsNullOrEmpty(args[1]) ? args[1] : errorString);
+
+
+                        string voteSite = string.Empty;
+                        int voteSiteId = 0;
+                        if (!int.TryParse(args[2], out voteSiteId))
+                        {
+                            Chat(player, "Use \"VoteSite ID\" to see all id(s) type /voteadmin delvote (ServerName).\nExample: /voteadmin delvote ServerName1");
+                            return;
+                        }
+
+                        if (_availableAPISites.Count >= voteSiteId)
+                            voteSite = _availableAPISites[voteSiteId];
+                        else
+                        {
+                            Chat(player, "Oops, your Votesite ID was too high.");
+                            return;
+                        }
+
+                        string voteID = (!string.IsNullOrEmpty(args[3]) ? args[3] : errorString);
+                        string voteKEY = (!string.IsNullOrEmpty(args[4]) ? args[4] : errorString);
+                        string IdKey = string.Empty;
+
+                        if (voteID != errorString && voteKEY != errorString)
+                            IdKey = $"{voteID}:{voteKEY}";
+                        else
+                            return; // TODO: Print error
+
+                        PrintWarning($"[AddVotePage] Player: {player.displayName} => ServerName: {serverName}, VoteSite: {voteSite}, VoteID: {voteID}, VoteKEY: {voteKEY}");
+
+                        try
+                        {
+                            bool succ = false;
+
+                            if (!_config.Servers.ContainsKey(serverName))
+                            {
+                                _config.Servers.Add(serverName, new Dictionary<string, string>() { { voteSite, IdKey } });
+                                succ = true;
+                            }
+                            else if (_config.Servers[serverName].ContainsKey(voteSite))
+                            {
+                                PrintWarning($"Replaced old {voteSite} value {_config.Servers[serverName][voteSite]} TO {IdKey}");
+                                _config.Servers[serverName][voteSite] = IdKey;
+                                succ = true;
+                            }
+                            else
+                            {
+                                _config.Servers[serverName].Add(voteSite, $"{voteID}:{voteKEY}");
+                                succ = true;
+                            }
+
+                            if (succ)
+                            {
+                                _ReloadEasyVote();
+                                Chat(player, $"Successfully added => ServerName: {serverName}, VoteSite: {voteSite}, VoteID: {voteID}, VoteKEY: {voteKEY}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Chat(player, "Oops, something went wrong. Check server console to see error message");
+                            PrintError($"Error while tring save 'AddVotePage'\n{ex.ToString()}");
+                        }
                     }
                     break;
-                // voteadmin addapi (server name) (vote site) (ID) (KEY)
-                case "addapi":
+                // voteadmin delvotepage (server name) (vote site)
+                case "delvotepage":
+                case "removevotepage":
+                case "delvote":
+                case "removevote":
                     {
+                        if (args.Length <= 1)
+                        {
+                            StringBuilder _temp = new StringBuilder();
 
-                    }
-                    break;
-                // voteadmin removeapi (server name) (vote site)
-                case "delapi":
-                case "removeapi":
-                    {
+                            for (int i = 0; i < _availableAPISites.Count; i++)
+                                _temp.AppendLine($" - [ID: {i}] {_availableAPISites[i]}");
 
+                            Chat(player, $"USAGE: /voteadmin delvote (ServerName) [Optional: VoteSite ID]\n" +
+                                $"- VoteSite ID is optional. If you do not add VoteSite id, then it will remove all vote sites inside that server.\n\n"
+                                 + $"VoteSite ID LIST:\n{_temp.ToString()}");
+                            _temp.Clear();
+
+                            return;
+                        }
+
+                        string serverName = (!string.IsNullOrEmpty(args[1]) ? args[1] : errorString);
+                        string voteSite = string.Empty;
+
+                        if (args.Length < 2)
+                        {
+                            int voteSiteId = 0;
+                            if (!int.TryParse(args[2], out voteSiteId))
+                            {
+                                Chat(player, "Use \"VoteSite ID\" to see all id(s) type /voteadmin delvote (ServerName).\nExample: /voteadmin delvote ServerName1");
+                                return;
+                            }
+
+                            if (_availableAPISites.Count >= voteSiteId)
+                                voteSite = _availableAPISites[voteSiteId];
+                            else
+                            {
+                                Chat(player, "Oops, your Votesite ID was too high.");
+                                return;
+                            }
+                        }
+
+                        PrintWarning($"[DelVotePage] Player: {player.displayName} => ServerName: {serverName}" + (string.IsNullOrEmpty(voteSite) ? "" : $", VoteSite: {voteSite}"));
+
+                        try
+                        {
+                            bool succ = false;
+
+                            if (!_config.Servers.ContainsKey(serverName))
+                                Chat(player, $"{serverName} does NOT exist.");
+                            else if (!_config.Servers[serverName].ContainsKey(voteSite) && args.Length < 2)
+                                Chat(player, $"{voteSite} does NOT exist in {serverName}.");
+                            else
+                            {
+                                succ = true;
+                                if (args.Length < 2)
+                                {
+                                    _config.Servers[serverName].Remove(voteSite);
+
+                                    if (_config.Servers[serverName].Count == 0)
+                                        _config.Servers.Remove(serverName);
+                                }
+                                else
+                                {
+                                    _config.Servers.Remove(serverName);
+                                }
+                            }
+
+                            if (succ)
+                            {
+                                _ReloadEasyVote();
+                                Chat(player, $"Successfully deleted {serverName}" + (string.IsNullOrEmpty(voteSite) ? "" : $" -> {voteSite}"));
+                                //TODO: Add succs message to player
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Chat(player, "Oops, something went wrong. Check server console to see error message");
+                            PrintError($"Error while tring save 'DelVotePage'\n{ex.ToString()}");
+                        }
                     }
                     break;
                 // voteadmin addreward (reward number) (variables without spaces, split with , char)
                 case "addreward":
                     {
 
+                    }
+                    break;
+                // voteadmin servernames
+                case "servernames":
+                case "serverlist":
+                case "servers":
+                    {
+                        StringBuilder _temp = new StringBuilder();
+
+                        _temp.AppendLine("All current \"servers\" what you have added:");
+                        foreach (var server in _config.Servers)
+                        {
+                            _temp.AppendLine($" - {server.Key}");
+                            foreach (var servers in _config.Servers[server.Key])
+                                _temp.AppendLine($"   * {servers.Key}");
+                        }
+
+                        Chat(player, _temp.ToString());
                     }
                     break;
                 // voteadmin removereward (reward number)
@@ -265,17 +449,23 @@ namespace Oxide.Plugins
 
                     }
                     break;
-                // voteadmin showcmds
-                case "showcmds":
-                case "showcommands":
-                    {
-
-                    }
-                    break;
-                // voteadmin testreward (reward number)
+                // voteadmin testreward
                 case "testreward":
+                case "test":
+                        RewardHandler(player, null, true);
+                    break;
+                case "reload":
                     {
-
+                        try
+                        {
+                            LoadConfigValues();
+                            Chat(player, "Reloaded EasyVote configs successfully!");
+                        }
+                        catch (Exception ex)
+                        {
+                            Chat(player, "Oops, something went wrong. Check server console to see error message");
+                            PrintError($"Error while tring 'reload'\n{ex.ToString()}");
+                        }
                     }
                     break;
             }
@@ -295,7 +485,8 @@ namespace Oxide.Plugins
         [ChatCommand("claim")]
         void cmdClaim(BasePlayer player, string command, string[] args)
         {
-            if (!hasPermission(player, permUse)){
+            if (!hasPermission(player, permUse))
+            {
                 Chat(player, _lang("NoPermission", player.UserIDString));
                 return;
             }
@@ -309,7 +500,7 @@ namespace Oxide.Plugins
             var timeout = 5500f; // Timeout (in milliseconds)
             Chat(player, _lang("ClaimPleaseWait", player.UserIDString));
 
-            foreach (var site in availableAPISites.ToList())
+            foreach (var site in _availableAPISites.ToList())
             {
                 foreach (KeyValuePair<string, Dictionary<string, string>> kvp in _config.Servers)
                 {
@@ -379,7 +570,8 @@ namespace Oxide.Plugins
         [ChatCommand("reward")]
         void cmdReward(BasePlayer player, string command, string[] args)
         {
-            if (!hasPermission(player, permUse)){
+            if (!hasPermission(player, permUse))
+            {
                 Chat(player, _lang("NoPermission", player.UserIDString));
                 return;
             }
@@ -393,7 +585,7 @@ namespace Oxide.Plugins
         #endregion
 
         #region Reward Handler
-        private void RewardHandler(BasePlayer player, string serverName = null)
+        private void RewardHandler(BasePlayer player, string serverName = null, bool adminTest = false)
         {
             // Check that player is in "database".
             var playerData = new PlayerData();
@@ -414,11 +606,11 @@ namespace Oxide.Plugins
 
             // Take closest number from rewardNumbers
             int? closest = null;
-            if (numberMax.Count != 0)
+            if (_numberMax.Count != 0)
             {
                 try
                 {
-                    closest = (int?)numberMax.Aggregate((x, y) => Math.Abs(x - voted) < Math.Abs(y - voted)
+                    closest = (int?)_numberMax.Aggregate((x, y) => Math.Abs(x - voted) < Math.Abs(y - voted)
                             ? (x > voted ? y : x)
                             : (y > voted ? x : y));
                 }
@@ -484,11 +676,11 @@ namespace Oxide.Plugins
                 }
 
             }
-            if (_config.Settings[PluginSettings.GlobalChatAnnouncments]?.ToLower() == "true")
+            if (_config.Settings[PluginSettings.GlobalChatAnnouncments]?.ToLower() == "true" && !adminTest)
                 PrintToChat($"{_lang("GlobalChatAnnouncments", player.UserIDString, player.displayName, voted)}");
 
             // Send message to discord text channel.
-            if (_config.Discord[PluginSettings.DiscordEnabled].ToLower() == "true")
+            if (_config.Discord[PluginSettings.DiscordEnabled].ToLower() == "true" && !adminTest)
             {
                 List<Fields> fields = new List<Fields>();
                 string json;
@@ -633,10 +825,10 @@ namespace Oxide.Plugins
             // Add response to StringBuilder
             if (claimCooldown.ContainsKey(player.userID))
             {
-                claimCooldown[player.userID].AppendLine(_lang("ClaimStatus", player.UserIDString, 
+                claimCooldown[player.userID].AppendLine(_lang("ClaimStatus", player.UserIDString,
                     (!string.IsNullOrEmpty(serverName) ? serverName : string.Empty), url, $"<color={voteStatusColor[responseNum]}>{voteStatus[responseNum]}</color>"));
-                    //(!string.IsNullOrEmpty(serverName) ? $"<color=cyan>[{serverName}]</color> " : string.Empty)
-                    //+ $"Checked {url}, status: <color={voteStatusColor[responseNum]}>{voteStatus[responseNum]}</color>");
+                //(!string.IsNullOrEmpty(serverName) ? $"<color=cyan>[{serverName}]</color> " : string.Empty)
+                //+ $"Checked {url}, status: <color={voteStatusColor[responseNum]}>{voteStatus[responseNum]}</color>");
             }
 
             // If response is 1 = Voted & not yet claimed
@@ -832,10 +1024,17 @@ namespace Oxide.Plugins
 
         private void HelpText()
         {
-            helpYou.Append("<color=cyan>EasyVote Commands ::</color>").AppendLine();
-            helpYou.Append("<color=yellow>/vote</color> - Show the voting website(s)").AppendLine();
-            helpYou.Append("<color=yellow>/claim</color> - Claim vote reward(s)").AppendLine();
-            helpYou.Append("<color=yellow>/reward list</color> - Display all reward(s) what you can get from voting.");
+            _helpYou.Append("<color=cyan>EasyVote Commands ::</color>").AppendLine();
+            _helpYou.Append("<color=yellow>/vote</color> - Show the voting website(s)").AppendLine();
+            _helpYou.Append("<color=yellow>/claim</color> - Claim vote reward(s)").AppendLine();
+            _helpYou.Append("<color=yellow>/reward list</color> - Display all reward(s) what you can get from voting.");
+
+            _helpAdmin.Append("<color=cyan>EasyVote Admin Commands ::</color>").AppendLine();
+            _helpAdmin.Append("<color=yellow>/voteadmin test</color> - Test reward(s)").AppendLine();
+            _helpAdmin.Append("<color=yellow>/voteadmin addvotepage (ServerName) (VoteSite ID) (API ID) (API KEY)</color> - Add vote page").AppendLine();
+            _helpAdmin.Append("<color=yellow>/voteadmin delvotepage (ServerName) [Optional: VoteSite ID]</color> - Remove one (or all) vote page(s)").AppendLine();
+            _helpAdmin.Append("<color=yellow>/voteadmin servers</color> - List all vote page(s)").AppendLine();
+            _helpAdmin.Append("<color=yellow>/voteadmin reload</color> - Reload configs").AppendLine();
         }
 
         private string CleanHTML(string input)
@@ -848,6 +1047,17 @@ namespace Oxide.Plugins
             if (player.IsAdmin) return true;
             if (permission.UserHasPermission(player.UserIDString, perm)) return true;
             return false;
+        }
+
+        bool IsDigitsOnly(string str)
+        {
+            foreach (char c in str)
+            {
+                if (c < '0' || c > '9')
+                    return false;
+            }
+
+            return true;
         }
 
         public class Fields
@@ -954,7 +1164,7 @@ namespace Oxide.Plugins
                         Puts($"Invalid vote config format \"{kvp.Key}\"");
                         continue;
                     }
-                    numberMax.Add(rewardNumber);
+                    _numberMax.Add(rewardNumber);
                 }
             }
         }
@@ -963,7 +1173,7 @@ namespace Oxide.Plugins
         {
             List<string> temp = new List<string>();
 
-            foreach (var site in availableAPISites.ToList())
+            foreach (var site in _availableAPISites.ToList())
             {
                 foreach (KeyValuePair<string, Dictionary<string, string>> kvp in _config.Servers)
                 {
@@ -1036,7 +1246,7 @@ namespace Oxide.Plugins
                 if (pass)
                 {
                     _Debug($"Added {kvp.Key} to the \"availableSites\" list");
-                    availableAPISites.Add(kvp.Key);
+                    _availableAPISites.Add(kvp.Key);
                 }
             }
         }
