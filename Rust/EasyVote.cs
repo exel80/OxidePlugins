@@ -14,7 +14,7 @@ namespace Oxide.Plugins
 {
     [Info("EasyVote", "Exel80", "2.0.4", ResourceId = 2102)]
     [Description("Simple and smooth voting start by activating one scirpt.")]
-    class EasyVote : RustPlugin
+    public class EasyVote : RustPlugin
     {
         [PluginReference] private Plugin DiscordMessages;
 
@@ -1027,10 +1027,10 @@ namespace Oxide.Plugins
 
             _helpAdmin.Append("<color=cyan>EasyVote Admin Commands ::</color>").AppendLine();
             _helpAdmin.Append("<color=yellow>/voteadmin test</color> - Test reward(s)").AppendLine();
-            _helpAdmin.Append("<color=yellow>/voteadmin addvotepage (ServerName) (VoteSite ID) (API ID) (API KEY)</color> - Add vote page").AppendLine();
-            _helpAdmin.Append("<color=yellow>/voteadmin delvotepage (ServerName) [Optional: VoteSite ID]</color> - Remove one (or all) vote page(s)").AppendLine();
+            _helpAdmin.Append("<color=yellow>/voteadmin addvotepage (ServerName) (VoteSite ID) (API ID) (API KEY)</color> - Add vote page. If ServerName does not exist, it will create it. VoteSite ID is (0: Beancan | 1: RustServers), if you just type /voteadmin addvotepage then id list will printed in chat.").AppendLine();
+            _helpAdmin.Append("<color=yellow>/voteadmin delvotepage (ServerName) [Optional: VoteSite ID]</color> - Remove one (or if you leave VoteSite ID empty it will remove all vote pages) vote page(s)").AppendLine();
             _helpAdmin.Append("<color=yellow>/voteadmin servers</color> - List all vote page(s)").AppendLine();
-            _helpAdmin.Append("<color=yellow>/voteadmin reload</color> - Reload configs").AppendLine();
+            _helpAdmin.Append("<color=yellow>/voteadmin reload</color> - Reload config").AppendLine();
         }
 
         private string CleanHTML(string input)
